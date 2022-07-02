@@ -1,0 +1,4 @@
+*.session*
+__pycache__
+.dubdata
+config.json
