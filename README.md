@@ -1,7 +1,18 @@
-# Steal My Neko 🐈
-[![Telegram - Channel](https://img.shields.io/badge/Telegram-Channel-blue?logo=telegram)](https://t.me/nekoslf)  
-An awesome Telegram parser & poster configured to steal nekos.
+<h1 align="center">Steal My Neko🐈</h1>
 
+<div align="center">
+  <a href="#installation">Installation</a> •
+  <a href="https://t.me/nekoslf/3">Changelog</a> •
+  <a href="#contributing">Contributing</a><br><br>
+  <img alt="Telegram - Channel" src="https://img.shields.io/badge/Telegram-Channel-blue?style=flat-square&logo=telegram"><a href="https://t.me/nekoslf"></img>
+</div>
+
+## About
+Awesome Telegram parser & poster configured to steal nekos.  
+Script uses web and telegram parsers. Telegram parser requires user account to receive and use file_id directly.
+Telegram parser supports ad block which automatically detects ad links and mentions. Unfortunately, ad blocking also blocks any album for now.
+
+Started in June 2021
 ## Installation
 1. Clone repository:  
 ```git clone https://github.com/unxho/steal-my-neko && cd steal-my-neko```  
