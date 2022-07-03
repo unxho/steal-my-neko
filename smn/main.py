@@ -2,6 +2,7 @@ from asyncio import sleep, get_event_loop
 from datetime import datetime
 from random import choice
 from pyrogram import Client
+from pyrogram.errors import BadRequest
 from .dubctl import DubsDataFile
 from .parser import UserCli, PARSERS
 from .parser.base import WebParserTemplate, TgParserTemplate, ReceiveError
@@ -22,10 +23,18 @@ loop.run_until_complete(dublicates._post_init())
 
 async def post(file, test=False):
     out = channel if not test else log_chat
-    if file.startswith(('http:', 'https:')):
-        await client.send_photo(out, file)
-    else:
-        await UserCli.send_cached_media(out, file)
+    counter = 0
+    while counter < 3:
+        counter += 1
+        try:
+            if file.startswith(('http:', 'https:')):
+                await client.send_photo(out, file)
+            else:
+                await UserCli.send_cached_media(out, file)
+            return
+        except BadRequest:
+            continue
+    raise ReceiveError(f"{file} is too big or unreachable.")
 
 
 async def log(level, text):
@@ -56,7 +65,10 @@ async def receiver(parser: WebParserTemplate or TgParserTemplate):
     if file_unique_id in dublicates.data:
         return await receiver(choice(PARSERS))
     await dublicates.update(file_unique_id)
-    return await post(file)
+    try:
+        return await post(file)
+    except ReceiveError:
+        return await receiver(choice(PARSERS))
 
 
 async def worker():
