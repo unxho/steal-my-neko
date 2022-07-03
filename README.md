@@ -4,7 +4,7 @@
   <a href="#installation">Installation</a> •
   <a href="https://t.me/nekoslf/3">Changelog</a> •
   <a href="#contributing">Contributing</a><br><br>
-  <img alt="Telegram - Channel" src="https://img.shields.io/badge/Telegram-Channel-blue?style=flat-square&logo=telegram"><a href="https://t.me/nekoslf"></img>
+  <a href="https://t.me/nekoslf"><img alt="Telegram - Channel" src="https://img.shields.io/badge/Telegram-Channel-blue?style=flat-square&logo=telegram"></img></a>
 </div>
 
 ## About
