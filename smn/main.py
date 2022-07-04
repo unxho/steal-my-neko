@@ -34,7 +34,7 @@ async def post(file, test=False):
             return
         except BadRequest:
             continue
-    raise ReceiveError(f"{file} is too big or unreachable.")
+    raise ReceiveError(str(file) + " is too big or unreachable.")
 
 
 async def log(level, text):
@@ -57,14 +57,17 @@ async def receiver(parser: WebParserTemplate or TgParserTemplate):
             parsers = PARSERS
         return await receiver(choice(parsers))
     if isinstance(file, int):
+        dub_candidate = str(parser.chat.id) + ':' + str(file)
+        if dub_candidate in dublicates.data:
+            return await receiver(choice(PARSERS))
         msg = await UserCli.get_messages(parser.chat.id, file)
         media = utils.get_media(msg)
-        file, file_unique_id = media.file_id, media.file_unique_id
+        file = media.file_id
     else:
-        file_unique_id = file.split('/')[-1]
-    if file_unique_id in dublicates.data:
-        return await receiver(choice(PARSERS))
-    await dublicates.update(file_unique_id)
+        dub_candidate = file.split('/')[-1]
+        if dub_candidate in dublicates.data:
+            return await receiver(choice(PARSERS))
+    await dublicates.update(dub_candidate)
     try:
         return await post(file)
     except ReceiveError:
