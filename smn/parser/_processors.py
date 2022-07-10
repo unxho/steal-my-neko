@@ -35,6 +35,12 @@ async def nekosbest(r: Response, *_):
         raise NoFileProvidedError(f'[{r.status_code}] {r.content}')
     return d
 
+
 async def nekosfun(r: Response, *_):
     """nekos.fun processor"""
     return simple(r, 'image')
+
+
+async def waifupics(r: Response, *_):
+    """waifu.pics processor"""
+    return simple(r, 'url')
