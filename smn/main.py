@@ -62,6 +62,8 @@ async def receiver(parser: WebParserTemplate or TgParserTemplate):
             return await receiver(choice(PARSERS))
         msg = await UserCli.get_messages(parser.chat.id, file)
         media = utils.get_media(msg)
+        if not media:
+            return await receiver(choice(PARSERS))
         file = media.file_id
     else:
         dub_candidate = file.split('/')[-1]

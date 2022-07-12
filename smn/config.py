@@ -1,15 +1,15 @@
-try:
-    import orjson as json
-except (ImportError, ModuleNotFoundError):
-    import json
+from configparser import ConfigParser
+
+__config = ConfigParser()
 
 try:
-    with open('config.json', 'r', encoding='utf8') as f:
-        __config = json.loads(f.read())
+    __config.read('config.ini')
 except FileNotFoundError as e:
     raise ValueError("No config file found") from e
 
-API_ID, API_HASH = __config['API_ID'], __config['API_HASH']
-BOT_TOKEN = __config['BOT_TOKEN']
-HELPER_PHONE = __config.get('HELPER_PHONE')
-CHANNEL, LOG_CHAT = __config['CHANNEL'], __config['LOG_CHAT']
+API_ID, API_HASH = __config.get("api", "id"), __config.get("api", "hash")
+BOT_TOKEN = __config.get("bot", "token")
+HELPER_ENABLED, HELPER_PHONE = __config.get("helper", "use"), \
+                               __config.get("helper", "phone")
+CHANNEL, LOG_CHAT = __config.get("target", "channel"), \
+                    __config.get("target", "log_chat")

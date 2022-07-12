@@ -1,20 +1,20 @@
 from typing import Coroutine
 from random import randint
-from httpx import AsyncClient as HttpClient, codes, Request, ConnectTimeout, ConnectError
+from httpx import AsyncClient as HttpClient, codes, Request,\
+                  ConnectTimeout, ConnectError
 from pyrogram import Client, filters
 from pyrogram.handlers import MessageHandler
 from pyrogram.types import Message
-from .. import config
+from .. import config, utils
 
 UserCli = Client('.nekohelper',
                  config.API_ID,
                  config.API_HASH,
-                 phone_number=config.HELPER_PHONE)
+                 phone_number=config.HELPER_PHONE)\
+          if config.HELPER_ENABLED else None
 
 
 class TgParserTemplate:
-
-    __client = UserCli
 
     def __init__(self,
                  link: str,
@@ -23,9 +23,11 @@ class TgParserTemplate:
                  adfilter: bool = True):
 
         if not client:
-            self._client = self.__client
+            self._client = UserCli
         else:
             self._client = client
+        if not self._client:
+            return
         try:
             self._client.start()
         except ConnectionError:
@@ -49,8 +51,6 @@ class TgParserTemplate:
         clean_cache = []
         async for m in dirty_cache:
             if self.adfilter(m):
-                # caching file_id is deprecated since 0.4.2 due to FILE_REFERENCE_EXPIRED error
-                # now we cache only the message id and then receive (unique_)file_id directly
                 clean_cache.append(m.id)
         self._cache = clean_cache
 
@@ -61,7 +61,7 @@ class TgParserTemplate:
         return self.adfilter(m)
 
     def adfilter(self, m: Message):
-        if not (m.photo or m.video or m.animation):
+        if not utils.get_media(m):
             return False
         if self.adf and (m.media_group_id or m.forward_from):
             # ignoring albums because it most likely an ad
@@ -84,6 +84,8 @@ class TgParserTemplate:
         return True
 
     async def recv(self):
+        if not self._client:
+            raise ReceiveError("Helper disabled.")
         if not self._cache:
             await self._cache_everything()
         media_ind = randint(0, len(self._cache) - 1)
@@ -118,7 +120,8 @@ class WebParserTemplate:
             counter += 1
             try:
                 response = await self._session.send(request)
-                if not self.ignore_status_code and response.status_code != codes.OK:
+                if not self.ignore_status_code\
+                   and response.status_code != codes.OK:
                     continue
                 break
             except (ConnectError, ConnectTimeout):
