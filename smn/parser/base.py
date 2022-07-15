@@ -47,9 +47,8 @@ class TgParserTemplate:
                 & filters.create(self.adfilter_stub)))
 
     async def _cache_everything(self):
-        dirty_cache = self._client.get_chat_history(self.link, 50)
         clean_cache = []
-        async for m in dirty_cache:
+        async for m in self._client.get_chat_history(self.link, 50):
             if self.adfilter(m):
                 clean_cache.append(m.id)
         self._cache = clean_cache

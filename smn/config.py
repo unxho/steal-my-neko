@@ -1,11 +1,11 @@
 from configparser import ConfigParser
+import os
 
 __config = ConfigParser()
-
-try:
-    __config.read('config.ini')
-except FileNotFoundError as e:
-    raise ValueError("No config file found") from e
+if 'config.ini' not in os.listdir():
+    print("No config file found")
+    exit(1)
+__config.read('config.ini')
 
 API_ID, API_HASH = __config.get("api", "id"), __config.get("api", "hash")
 BOT_TOKEN = __config.get("bot", "token")
