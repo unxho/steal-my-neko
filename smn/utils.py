@@ -5,5 +5,3 @@ def get_media(m):
         return m.video
     if m.animation:
         return m.animation
-    raise ValueError("No media found for " +
-                     str(m.chat.id) + " -> " + str(m.id))

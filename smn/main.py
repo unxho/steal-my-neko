@@ -48,6 +48,10 @@ async def wait():
 
 
 async def receiver(parser: WebParserTemplate or TgParserTemplate):
+    if config.FALLBACK:
+        async for latest_msg in UserCli.get_chat_history(config.CHANNEL, 1):
+            if (datetime.now() - latest_msg.date).seconds < config.FALLBACK_TIMEOUT:
+                return
     try:
         file = await parser.recv()
     except ReceiveError:
@@ -62,6 +66,8 @@ async def receiver(parser: WebParserTemplate or TgParserTemplate):
             return await receiver(choice(PARSERS))
         msg = await UserCli.get_messages(parser.chat.id, file)
         media = utils.get_media(msg)
+        if not media:
+            return await receiver(choice(PARSERS))
         file = media.file_id
     else:
         dub_candidate = file.split('/')[-1]
