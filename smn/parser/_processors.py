@@ -10,11 +10,21 @@ class NoFileProvidedError(ValueError):
     pass
 
 
-def simple(r: Response, field):
+def simple(r: Response or str or dict, fields: tuple or list or str):
     """Gets the file url from some specific json field."""
-    file = json.loads(r.content).get(field)
-    if not file:
-        raise NoFileProvidedError(f'[{r.status_code}] {r.content}')
+    if isinstance(fields, str):
+        fields = [fields]
+    if isinstance(r, Response):
+        file = json.loads(r.content)
+    elif isinstance(r, str):
+        file = json.loads(r)
+    else:
+        file = r
+    for field in fields:
+        file = file.get(field)
+        if not file:
+            raise NoFileProvidedError(f'[{r.status_code}] {r.content}'
+                                      if isinstance(r, Response) else r)
     return file
 
 
@@ -30,10 +40,7 @@ async def randomcat(r: Response, *_):
 
 async def nekosbest(r: Response, *_):
     """nekos.best processsor"""
-    d = simple(r, 'results')[0].get('url')
-    if not d:
-        raise NoFileProvidedError(f'[{r.status_code}] {r.content}')
-    return d
+    return simple(r, ('results', 'url'))
 
 
 async def nekosfun(r: Response, *_):
