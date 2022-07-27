@@ -2,9 +2,9 @@
 
 <div align="center">
   <a href="#installation">Installation</a> •
-  <a href="https://t.me/nekoslf/3">Changelog</a> •
+  <a href="https://t.me/nekosv/3">Changelog</a> •
   <a href="#contributing">Contributing</a><br><br>
-  <a href="https://t.me/nekoslf"><img alt="Telegram - Channel" src="https://img.shields.io/badge/Telegram-Channel-blue?style=flat-square&logo=telegram"></img></a>
+  <a href="https://t.me/nekosv"><img alt="Telegram - Channel" src="https://img.shields.io/badge/Telegram-Channel-blue?style=flat-square&logo=telegram"></img></a>
 </div>
 
 ## About
@@ -20,7 +20,7 @@ Started in June 2021
 ```pip install -r requirements.txt```  
 You can additionaly install `optional-requirements.txt` which will make the script faster, but also may cause os-related bugs.  
 3. Rename example config:  
-```mv {example.,}config.json```  
+```mv {example.,}config.ini```  
 And fill it in.
 4. Start the script:  
 ```python -m smn```
