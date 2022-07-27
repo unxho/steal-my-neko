@@ -1,17 +1,17 @@
 from typing import Coroutine
 from random import randint
-from httpx import AsyncClient as HttpClient, codes, Request,\
-                  ConnectTimeout, ConnectError
+from httpx import (AsyncClient as HttpClient, codes, Request, ConnectTimeout,
+                   ConnectError)
 from pyrogram import Client, filters
 from pyrogram.handlers import MessageHandler
 from pyrogram.types import Message
 from .. import config, utils
 
-UserCli = Client('.nekohelper',
-                 config.API_ID,
-                 config.API_HASH,
-                 phone_number=config.HELPER_PHONE)\
-          if config.HELPER_ENABLED else None
+UserCli = (Client('.nekohelper',
+                  config.API_ID,
+                  config.API_HASH,
+                  phone_number=config.HELPER_PHONE)
+           if config.HELPER_ENABLED else None)
 
 
 class TgParserTemplate:
@@ -60,12 +60,12 @@ class TgParserTemplate:
         return self.adfilter(m)
 
     def adfilter(self, m: Message):
-        if not utils.get_media(m):
+        if not utils.get_media(m) or m.empty:
             return False
         if self.adf and (m.media_group_id or m.forward_from):
             # ignoring albums because it most likely an ad
             return False
-        if m.empty or (not m.text and not m.caption):
+        if not m.text and not m.caption:
             return True
         if self.adf:
             text = m.text if m.text else m.caption

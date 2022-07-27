@@ -50,7 +50,8 @@ async def wait():
 async def receiver(parser: WebParserTemplate or TgParserTemplate):
     if config.FALLBACK:
         async for latest_msg in UserCli.get_chat_history(config.CHANNEL, 1):
-            if (datetime.now() - latest_msg.date).seconds < config.FALLBACK_TIMEOUT:
+            if ((datetime.now() - latest_msg.date).seconds <
+                    config.FALLBACK_TIMEOUT):
                 return
     try:
         file = await parser.recv()
