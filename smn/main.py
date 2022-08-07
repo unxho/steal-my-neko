@@ -1,18 +1,17 @@
 from asyncio import sleep, get_event_loop
 from datetime import datetime
 from random import choice
-from pyrogram import Client
-from pyrogram.errors import BadRequest
+from telethon import TelegramClient
+from telethon.errors import BadRequestError
+from telethon.tl.custom.message import Message
 from .dubctl import DubsDataFile
 from .parser import UserCli, PARSERS
 from .parser.base import WebParserTemplate, TgParserTemplate, ReceiveError
-from . import utils, config
+from . import config
 
-client = Client('.nekoposter',
-                config.API_ID,
-                config.API_HASH,
-                bot_token=config.BOT_TOKEN)
-client.start()
+client = TelegramClient('.nekoposter', config.API_ID, config.API_HASH)
+client.start(bot_token=config.BOT_TOKEN)
+
 channel = config.CHANNEL
 log_chat = config.LOG_CHAT
 dublicates = DubsDataFile()
@@ -27,12 +26,12 @@ async def post(file, test=False):
     while counter < 3:
         counter += 1
         try:
-            if file.startswith(('http:', 'https:')):
-                await client.send_photo(out, file)
+            if isinstance(file, str) and file.startswith(('http:', 'https:')):
+                await client.send_message(out, file=file)
             else:
-                await UserCli.send_cached_media(out, file)
+                await UserCli.send_message(out, file=file)
             return
-        except BadRequest:
+        except BadRequestError:
             continue
     raise ReceiveError(str(file) + " is too big or unreachable.")
 
@@ -49,7 +48,7 @@ async def wait():
 
 async def receiver(parser: WebParserTemplate or TgParserTemplate):
     if config.FALLBACK:
-        async for latest_msg in UserCli.get_chat_history(config.CHANNEL, 1):
+        async for latest_msg in UserCli.iter_messages(config.CHANNEL, 1):
             if ((datetime.now() - latest_msg.date).seconds <
                     config.FALLBACK_TIMEOUT):
                 return
@@ -61,15 +60,11 @@ async def receiver(parser: WebParserTemplate or TgParserTemplate):
         if not parsers:
             parsers = PARSERS
         return await receiver(choice(parsers))
-    if isinstance(file, int):
-        dub_candidate = str(parser.chat.id) + ':' + str(file)
-        if dub_candidate in dublicates.data:
+    if isinstance(file, Message):
+        dub_candidate = str(parser.chat.id) + ':' + str(file.id)
+        if dub_candidate in dublicates.data or not file.media:
             return await receiver(choice(PARSERS))
-        msg = await UserCli.get_messages(parser.chat.id, file)
-        media = utils.get_media(msg)
-        if not media:
-            return await receiver(choice(PARSERS))
-        file = media.file_id
+        file = file.media
     else:
         dub_candidate = file.split('/')[-1]
         if dub_candidate in dublicates.data:
@@ -84,10 +79,7 @@ async def receiver(parser: WebParserTemplate or TgParserTemplate):
 async def worker():
     await log("I", "started")
     while True:
-        try:
-            await receiver(choice(PARSERS))
-        except BaseException as e:
-            await log('E', e)
+        await receiver(choice(PARSERS))
         await wait()
 
 

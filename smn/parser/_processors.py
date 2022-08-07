@@ -21,6 +21,8 @@ def simple(r: Response or str or dict, fields: tuple or list or str):
     else:
         file = r
     for field in fields:
+        if isinstance(file, (list, tuple)):
+            file = file[0]
         file = file.get(field)
         if not file:
             raise NoFileProvidedError(f'[{r.status_code}] {r.content}'

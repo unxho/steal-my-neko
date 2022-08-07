@@ -1,17 +1,18 @@
+import asyncio
 from typing import Coroutine
 from random import randint
 from httpx import (AsyncClient as HttpClient, codes, Request, ConnectTimeout,
                    ConnectError)
-from pyrogram import Client, filters
-from pyrogram.handlers import MessageHandler
-from pyrogram.types import Message
-from .. import config, utils
+from telethon import TelegramClient
+from telethon.events import NewMessage
+from telethon.tl.functions.channels import JoinChannelRequest
+from telethon.tl.functions.messages import ImportChatInviteRequest
+from telethon.errors.rpcerrorlist import UserAlreadyParticipantError
+from .. import config
 
-UserCli = (Client('.nekohelper',
-                  config.API_ID,
-                  config.API_HASH,
-                  phone_number=config.HELPER_PHONE)
+UserCli = (TelegramClient('.nekohelper', config.API_ID, config.API_HASH)
            if config.HELPER_ENABLED else None)
+loop = asyncio.get_event_loop()
 
 
 class TgParserTemplate:
@@ -19,8 +20,9 @@ class TgParserTemplate:
     def __init__(self,
                  link: str,
                  *,
-                 client: Client = None,
-                 adfilter: bool = True):
+                 client: TelegramClient = None,
+                 adfilter: bool = True,
+                 channel_id=None):
 
         if not client:
             self._client = UserCli
@@ -35,41 +37,48 @@ class TgParserTemplate:
         if not link.startswith(('http:', 'https:')):
             if not link.startswith('@'):
                 link = '@' + link
+            self.chat = loop.run_until_complete(
+                self._client(JoinChannelRequest(link)))
+        else:
+            try:
+                self.chat = loop.run_until_complete(
+                    self._client(ImportChatInviteRequest(
+                        link.split('+', 1)[1])))
+            except UserAlreadyParticipantError:
+                if not channel_id:
+                    raise Exception("We can't work only with invite links."
+                                    "Please, provide the channel_id.")
+                self.chat = loop.run_until_complete(
+                    self._client.get_entity(channel_id))
+        if hasattr(self.chat, 'chats'):
+            self.chat = self.chat.chats[0]
         self.link = link
         self.adf = adfilter
-        self.chat = self._client.join_chat(link)
         self._cache = []
-        self._client.add_handler(
-            MessageHandler(
-                self._cache_update,
-                filters.chat(self.chat.id)
-                & (filters.photo | filters.video | filters.animation)
-                & filters.create(self.adfilter_stub)))
+        self._client.add_event_handler(
+            self._cache_update,
+            NewMessage(incoming=True, from_users=self.chat, func=adfilter))
 
     async def _cache_everything(self):
         clean_cache = []
-        async for m in self._client.get_chat_history(self.link, 50):
+        async for m in self._client.iter_messages(self.chat, 50):
             if self.adfilter(m):
-                clean_cache.append(m.id)
+                clean_cache.append(m)
         self._cache = clean_cache
 
-    async def _cache_update(self, _, m):
-        self._cache.append(m.id)
+    async def _cache_update(self, m):
+        self._cache.append(m)
 
-    def adfilter_stub(self, _, m: Message):
-        return self.adfilter(m)
-
-    def adfilter(self, m: Message):
-        if not utils.get_media(m) or m.empty:
+    def adfilter(self, m):
+        if not m.media or m.sticker:
             return False
-        if self.adf and (m.media_group_id or m.forward_from):
-            # ignoring albums because it most likely an ad
+        if self.adf and (m.grouped_id or m.fwd_from or m.buttons):
+            # ignoring albums/fwds/buttons because it most likely an ad
             return False
-        if not m.text and not m.caption:
+        if not m.text:
             return True
         if self.adf:
-            text = m.text if m.text else m.caption
-            text = text.markdown.replace(self.link, '')
+            text = m.text.replace(self.link, '')
             if self.link.startswith('http:'):
                 text = text.replace('https' + self.link[4:], '')
             elif self.link.startswith('https:'):

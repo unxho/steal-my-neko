@@ -13,7 +13,8 @@ WaifuPicsParser = WebParserTemplate('https://api.waifu.pics/sfw/neko',
                                     waifupics)
 
 CatsCatsParser = TgParserTemplate('cats_cats', adfilter=False)
-NekoArchiveEroParser = TgParserTemplate('Neko_Girls_Ero')
+NekoArchiveEroParser = TgParserTemplate('https://t.me/+SYOwjbbXYsY0NzM6',
+                                        channel_id=-1001215035444)
 PishistyeInvalidiParser = TgParserTemplate('pishistyieinvalidi')
 
 PARSERS = (NekosLifeParser, RandomCatParser, NekosBestParser, CatsCatsParser,

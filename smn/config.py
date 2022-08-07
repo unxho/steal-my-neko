@@ -14,7 +14,6 @@ API_HASH = __config.get("api", "hash")
 BOT_TOKEN = __config.get("bot", "token")
 
 HELPER_ENABLED = __config.getboolean("helper", "use")
-HELPER_PHONE = __config.get("helper", "phone")
 
 CHANNEL = __config.getint("target", "channel")
 LOG_CHAT = __config.getint("target", "log_chat")
