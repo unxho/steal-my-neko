@@ -57,7 +57,8 @@ class TgParserTemplate:
         self._cache = []
         self._client.add_event_handler(
             self._cache_update,
-            NewMessage(incoming=True, from_users=self.chat, func=adfilter))
+            NewMessage(incoming=True, from_users=self.chat,
+                       func=self.adfilter))
 
     async def _cache_everything(self):
         clean_cache = []
