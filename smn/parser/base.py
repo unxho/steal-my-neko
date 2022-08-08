@@ -61,19 +61,52 @@ class TgParserTemplate:
 
     async def _cache_everything(self):
         clean_cache = []
-        async for m in self._client.iter_messages(self.chat, 50):
+        _album_queue = {}
+        latest_msg_is_part_of_album = False
+        limit = 50
+        counter = 0
+        latest_msg_is_part_of_album = False
+        async for m in self._client.iter_messages(self.chat):
+            if m.grouped_id:
+                if not _album_queue.get(m.grouped_id):
+                    _album_queue[m.grouped_id] = []
+                _album_queue[m.grouped_id].append(m)
+                latest_msg_is_part_of_album = True
+                # force continuing loop without limit checks
+                continue
+            # album is fully handled now
+            if latest_msg_is_part_of_album:
+                counter += 1
+            counter += 1
+            latest_msg_is_part_of_album = False
             if self.adfilter(m):
                 clean_cache.append(m)
+            if counter > limit:
+                break
+        for album in _album_queue.values():
+            boo = False
+            for m in album:
+                if not self.adfilter(m):
+                    boo = True
+                    break
+            if boo:
+                continue
+            clean_cache.append(album)
         self._cache = clean_cache
 
     async def _cache_update(self, m):
         self._cache.append(m)
 
     def adfilter(self, m):
+        if hasattr(m, 'messages'):
+            for m_ in m.messages:
+                if not self.adfilter(m_):
+                    return False
+            return True
         if not m.media or m.sticker:
             return False
-        if self.adf and (m.grouped_id or m.fwd_from or m.buttons):
-            # ignoring albums/fwds/buttons because it most likely an ad
+        if self.adf and (m.fwd_from or m.buttons):
+            # ignoring fwds/buttons because it most likely an ad
             return False
         if not m.text:
             return True

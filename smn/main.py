@@ -61,10 +61,15 @@ async def receiver(parser: WebParserTemplate or TgParserTemplate):
             parsers = PARSERS
         return await receiver(choice(parsers))
     if isinstance(file, Message):
-        dub_candidate = str(parser.chat.id) + ':' + str(file.id)
-        if dub_candidate in dublicates.data or not file.media:
-            return await receiver(choice(PARSERS))
-        file = file.media
+        file = [file]
+    if isinstance(file, list):
+        file_ = file
+        file = []
+        for f in file_:
+            dub_candidate = str(parser.chat.id) + ':' + str(f.id)
+            if dub_candidate in dublicates.data or not f.media:
+                return await receiver(choice(PARSERS))
+            file.append(f.media)
     else:
         dub_candidate = file.split('/')[-1]
         if dub_candidate in dublicates.data:
