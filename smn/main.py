@@ -1,13 +1,14 @@
 from asyncio import sleep, get_event_loop
 from datetime import datetime
 from random import choice
+import logging
 from telethon import TelegramClient
 from telethon.errors import BadRequestError
 from telethon.tl.custom.message import Message
 from .dubctl import DubsDataFile
 from .parser import UserCli, PARSERS
 from .parser.base import WebParserTemplate, TgParserTemplate, ReceiveError
-from . import config
+from . import config, log
 
 client = TelegramClient('.nekoposter', config.API_ID, config.API_HASH)
 client.start(bot_token=config.BOT_TOKEN)
@@ -18,6 +19,7 @@ dublicates = DubsDataFile()
 
 loop = get_event_loop()
 loop.run_until_complete(dublicates._post_init())
+log.init(client)
 
 
 async def post(file, test=False):
@@ -34,12 +36,6 @@ async def post(file, test=False):
         except BadRequestError:
             continue
     raise ReceiveError(str(file) + " is too big or unreachable.")
-
-
-async def log(level, text):
-    out = f'[{level}] {text}'
-    print(out)
-    await client.send_message(log_chat, '`' + out + '`')
 
 
 async def wait():
@@ -82,9 +78,12 @@ async def receiver(parser: WebParserTemplate or TgParserTemplate):
 
 
 async def worker():
-    await log("I", "started")
+    logging.info("Launched.")
     while True:
-        await receiver(choice(PARSERS))
+        try:
+            await receiver(choice(PARSERS))
+        except BaseException as e:
+            logging.error(e)
         await wait()
 
 
