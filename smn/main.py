@@ -4,7 +4,6 @@ from random import choice
 import logging
 from telethon import TelegramClient
 from telethon.errors import BadRequestError
-from telethon.tl.custom.message import Message
 from .dubctl import DubsDataFile
 from .parser import UserCli, PARSERS
 from .parser.base import WebParserTemplate, TgParserTemplate, ReceiveError
@@ -43,6 +42,13 @@ async def wait():
 
 
 async def receiver(parser: WebParserTemplate or TgParserTemplate):
+    """
+    Main parse wrapper.
+
+    Message/list - list of messages
+    str          - link to file
+    bytes        - file data
+    """
     if config.FALLBACK:
         async for latest_msg in UserCli.iter_messages(config.CHANNEL, 1):
             if ((datetime.now() - latest_msg.date).seconds <
@@ -56,7 +62,8 @@ async def receiver(parser: WebParserTemplate or TgParserTemplate):
         if not parsers:
             parsers = PARSERS
         return await receiver(choice(parsers))
-    if isinstance(file, Message):
+    dub_candidate = ''
+    if not isinstance(file, (str, bytes)):
         file = [file]
     if isinstance(file, list):
         file_ = file
@@ -66,11 +73,14 @@ async def receiver(parser: WebParserTemplate or TgParserTemplate):
             if dub_candidate in dublicates.data or not f.media:
                 return await receiver(choice(PARSERS))
             file.append(f.media)
-    else:
+    elif isinstance(file, str):
         dub_candidate = file.split('/')[-1]
         if dub_candidate in dublicates.data:
             return await receiver(choice(PARSERS))
-    await dublicates.update(dub_candidate)
+    # elif isinstance(file, bytes):
+    # TODO: raw data does not support dublicate checks
+    if dub_candidate:
+        await dublicates.update(dub_candidate)
     try:
         return await post(file)
     except ReceiveError:
@@ -83,7 +93,7 @@ async def worker():
         try:
             await receiver(choice(PARSERS))
         except BaseException as e:
-            logging.error(e)
+            logging.exception(e)
         await wait()
 
 

@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import sys
 from .config import LOG_CHAT
 
 
@@ -30,16 +31,17 @@ _tg_formatter = logging.Formatter(
 
 
 def init(cli):
+    lvl = logging.DEBUG if '--debug' in sys.argv else logging.INFO
     handler = logging.StreamHandler()
-    handler.setLevel(logging.INFO)
+    handler.setLevel(lvl)
     handler.setFormatter(_main_formatter)
 
     tghandler = TgHandler(cli)
-    tghandler.setLevel(logging.INFO)
+    tghandler.setLevel(lvl)
 
     logging.getLogger().handlers = []
     logging.getLogger().addHandler(handler)
     logging.getLogger().addHandler(TgHandler(cli))
-    logging.getLogger().setLevel(logging.NOTSET)
+    logging.getLogger().setLevel(lvl)
     logging.getLogger("telethon").setLevel(logging.WARNING)
     logging.captureWarnings(True)
