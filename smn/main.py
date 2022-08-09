@@ -56,7 +56,8 @@ async def receiver(parser: WebParserTemplate or TgParserTemplate):
                 return
     try:
         file = await parser.recv()
-    except ReceiveError:
+    except ReceiveError as e:
+        logging.debug(e)
         parsers = list(PARSERS)
         parsers.remove(parser)
         if not parsers:

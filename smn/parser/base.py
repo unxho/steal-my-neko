@@ -130,6 +130,9 @@ class TgParserTemplate:
             raise ReceiveError("Helper disabled.")
         if not self._cache:
             await self._cache_everything()
+            if not self._cache:
+                raise ReceiveError(
+                    f"Parser {self.link} seems unable to cache.")
         media_ind = randint(0, len(self._cache) - 1)
         media = self._cache[media_ind]
         del self._cache[media_ind]

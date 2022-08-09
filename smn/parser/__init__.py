@@ -16,7 +16,8 @@ CatsCatsParser = TgParserTemplate('cats_cats', adfilter=False)
 NekoArchiveEroParser = TgParserTemplate('https://t.me/+SYOwjbbXYsY0NzM6',
                                         channel_id=-1001215035444)
 PishistyeInvalidiParser = TgParserTemplate('pishistyieinvalidi')
+KisyyParser = TgParserTemplate('kisyy')
 
 PARSERS = (NekosLifeParser, RandomCatParser, NekosBestParser, CatsCatsParser,
            NekoArchiveEroParser, PishistyeInvalidiParser, NekosFunParser,
-           WaifuPicsParser)
+           WaifuPicsParser, KisyyParser)
