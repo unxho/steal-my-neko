@@ -1,24 +1,24 @@
 from asyncio import sleep, get_event_loop
 from datetime import datetime
 from random import choice
-from pyrogram import Client
-from pyrogram.errors import BadRequest
+import logging
+from telethon import TelegramClient
+from telethon.errors import BadRequestError
 from .dubctl import DubsDataFile
 from .parser import UserCli, PARSERS
 from .parser.base import WebParserTemplate, TgParserTemplate, ReceiveError
-from . import utils, config
+from . import config, log
 
-client = Client('.nekoposter',
-                config.API_ID,
-                config.API_HASH,
-                bot_token=config.BOT_TOKEN)
-client.start()
+client = TelegramClient('.nekoposter', config.API_ID, config.API_HASH)
+client.start(bot_token=config.BOT_TOKEN)
+
 channel = config.CHANNEL
 log_chat = config.LOG_CHAT
 dublicates = DubsDataFile()
 
 loop = get_event_loop()
 loop.run_until_complete(dublicates._post_init())
+log.init(client)
 
 
 async def post(file, test=False):
@@ -27,20 +27,14 @@ async def post(file, test=False):
     while counter < 3:
         counter += 1
         try:
-            if file.startswith(('http:', 'https:')):
-                await client.send_photo(out, file)
+            if isinstance(file, str) and file.startswith(('http:', 'https:')):
+                await client.send_message(out, file=file)
             else:
-                await UserCli.send_cached_media(out, file)
+                await UserCli.send_message(out, file=file)
             return
-        except BadRequest:
+        except BadRequestError:
             continue
     raise ReceiveError(str(file) + " is too big or unreachable.")
-
-
-async def log(level, text):
-    out = f'[{level}] {text}'
-    print(out)
-    await client.send_message(log_chat, '`' + out + '`')
 
 
 async def wait():
@@ -48,34 +42,49 @@ async def wait():
 
 
 async def receiver(parser: WebParserTemplate or TgParserTemplate):
+    """
+    Main parse wrapper.
+
+    Message/list - list of messages
+    str          - link to file
+    bytes        - file data
+    """
     if config.FALLBACK:
-        async for latest_msg in UserCli.get_chat_history(config.CHANNEL, 1):
-            if (datetime.now() -
-                    latest_msg.date).seconds < config.FALLBACK_TIMEOUT:
+        async for latest_msg in UserCli.iter_messages(config.CHANNEL, 1):
+            if ((datetime.now() - latest_msg.date).seconds <
+                    config.FALLBACK_TIMEOUT):
                 return
     try:
         file = await parser.recv()
     except ReceiveError as e:
-        await log('recv', e)
+        logging.debug(e)
         parsers = list(PARSERS)
         parsers.remove(parser)
         if not parsers:
             parsers = PARSERS
         return await receiver(choice(parsers))
-    if isinstance(file, int):
-        dub_candidate = str(parser.chat.id) + ':' + str(file)
-        if dub_candidate in dublicates.data:
-            return await receiver(choice(PARSERS))
-        msg = await UserCli.get_messages(parser.chat.id, file)
-        media = utils.get_media(msg)
-        if not media:
-            return await receiver(choice(PARSERS))
-        file = media.file_id
-    else:
+    dub_candidate = ''
+    if not isinstance(file, (str, bytes, list)):
+        # Message
+        file = [file]
+    if isinstance(file, list):
+        # Messages
+        file_ = file
+        file = []
+        for f in file_:
+            dub_candidate = str(parser.chat.id) + ':' + str(f.id)
+            if dub_candidate in dublicates.data or not f.media:
+                return await receiver(choice(PARSERS))
+            file.append(f.media)
+    elif isinstance(file, str):
+        # Link
         dub_candidate = file.split('/')[-1]
         if dub_candidate in dublicates.data:
             return await receiver(choice(PARSERS))
-    await dublicates.update(dub_candidate)
+    # elif isinstance(file, bytes):
+    # TODO: raw data does not support dublicate checks
+    if dub_candidate:
+        await dublicates.update(dub_candidate)
     try:
         return await post(file)
     except ReceiveError:
@@ -83,12 +92,12 @@ async def receiver(parser: WebParserTemplate or TgParserTemplate):
 
 
 async def worker():
-    await log("I", "started")
+    logging.info("Launched.")
     while True:
         try:
             await receiver(choice(PARSERS))
         except BaseException as e:
-            await log('E', e)
+            logging.exception(e)
         await wait()
 
 
