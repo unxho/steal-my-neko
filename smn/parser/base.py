@@ -69,6 +69,7 @@ class TgParserTemplate:
             self._cache_update,
             NewMessage(incoming=True, from_users=self.chat, func=self.adfilter),
         )
+        self._known_albums = {}
 
     async def _cache_everything(self):
         clean_cache = []
@@ -106,6 +107,10 @@ class TgParserTemplate:
         self._cache = clean_cache
 
     async def _cache_update(self, m):
+        if m.grouped_id:
+            if not self._known_albums.get(m.grouped_id):
+                self._known_albums[m.grouped_id] = []
+            self._known_albums[m.grouped_id].append(m)
         self._cache.append(m)
 
     def adfilter(self, m):
@@ -145,7 +150,14 @@ class TgParserTemplate:
         media_ind = randint(0, len(self._cache) - 1)
         media = self._cache[media_ind]
         del self._cache[media_ind]
-        logging.debug(self.link + " -> " + str(media.id))
+        if not isinstance(media, list) and media.grouped_id in self._known_albums:
+            media = self._known_albums.pop(media.grouped_id)
+        if logging.getLogger().isEnabledFor(logging.DEBUG):
+            if isinstance(media, list):
+                ids = ", ".join([str(m.id) for m in media])
+            else:
+                ids = str(media.id)
+            logging.debug(self.link + " -> " + ids)
         return media
 
 

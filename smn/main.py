@@ -33,9 +33,12 @@ async def post(file, test=False):
             if isinstance(file, str) and file.startswith(("http:", "https:")):
                 await client.send_message(out, file=file)
             else:
+                if isinstance(file, list) and len(file) == 1:
+                    file = file[0]
                 await UserCli.send_message(out, file=file)
             return
-        except BadRequestError:
+        except BadRequestError as e:
+            logging.debug(e)
             continue
     raise ReceiveError(str(file) + " is too big or unreachable.")
 
@@ -76,12 +79,14 @@ async def receiver(parser: WebParserTemplate or TgParserTemplate):
         for f in file_:
             dub_candidate = str(parser.chat.id) + ":" + str(f.id)
             if dub_candidate in dublicates.data or not f.media:
+                logging.debug("Dublicate: " + dub_candidate)
                 return await receiver(choice(PARSERS))
             file.append(f.media)
     elif isinstance(file, str):
         # Link
         dub_candidate = file.split("/")[-1]
         if dub_candidate in dublicates.data:
+            logging.debug("Dublicate: " + dub_candidate)
             return await receiver(choice(PARSERS))
     # elif isinstance(file, bytes):
     # TODO: raw data does not support dublicate checks
