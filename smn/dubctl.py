@@ -2,8 +2,7 @@ import aiofiles
 
 
 class DubsDataFile:
-
-    def __init__(self, file: str = '.dubdata', amount: int = 24 * 7 * 3):
+    def __init__(self, file: str = ".dubdata", amount: int = 24 * 7 * 3):
         self.file = file
         self.amount = amount
         self.data = []
@@ -13,9 +12,9 @@ class DubsDataFile:
         try:
             async with aiofiles.open(self.file, mode="r") as f:
                 async for line in f:
-                    data.append(line.rstrip('\n'))
+                    data.append(line.rstrip("\n"))
         except FileNotFoundError:
-            open(self.file, mode='w', encoding='utf-8').close()
+            open(self.file, mode="w", encoding="utf-8").close()
         self.data = data
 
     async def update(self, link: str):
@@ -26,4 +25,4 @@ class DubsDataFile:
 
     async def save(self):
         async with aiofiles.open(self.file, mode="w") as f:
-            await f.write('\n'.join(self.data))
+            await f.write("\n".join(self.data))

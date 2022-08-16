@@ -1,8 +1,14 @@
 import asyncio
+import logging
 from typing import Coroutine
 from random import randint
-from httpx import (AsyncClient as HttpClient, codes, Request, ConnectTimeout,
-                   ConnectError)
+from httpx import (
+    AsyncClient as HttpClient,
+    codes,
+    Request,
+    ConnectTimeout,
+    ConnectError,
+)
 from telethon import TelegramClient
 from telethon.events import NewMessage
 from telethon.tl.functions.channels import JoinChannelRequest
@@ -10,19 +16,23 @@ from telethon.tl.functions.messages import ImportChatInviteRequest
 from telethon.errors.rpcerrorlist import UserAlreadyParticipantError
 from .. import config
 
-UserCli = (TelegramClient('.nekohelper', config.API_ID, config.API_HASH)
-           if config.HELPER_ENABLED else None)
+UserCli = (
+    TelegramClient(".nekohelper", config.API_ID, config.API_HASH)
+    if config.HELPER_ENABLED
+    else None
+)
 loop = asyncio.get_event_loop()
 
 
 class TgParserTemplate:
-
-    def __init__(self,
-                 link: str,
-                 *,
-                 client: TelegramClient = None,
-                 adfilter: bool = True,
-                 channel_id=None):
+    def __init__(
+        self,
+        link: str,
+        *,
+        client: TelegramClient = None,
+        adfilter: bool = True,
+        channel_id=None,
+    ):
 
         if not client:
             self._client = UserCli
@@ -34,31 +44,31 @@ class TgParserTemplate:
             self._client.start()
         except ConnectionError:
             pass
-        if not link.startswith(('http:', 'https:')):
-            if not link.startswith('@'):
-                link = '@' + link
-            self.chat = loop.run_until_complete(
-                self._client(JoinChannelRequest(link)))
+        if not link.startswith(("http:", "https:")):
+            if not link.startswith("@"):
+                link = "@" + link
+            self.chat = loop.run_until_complete(self._client(JoinChannelRequest(link)))
         else:
             try:
                 self.chat = loop.run_until_complete(
-                    self._client(ImportChatInviteRequest(
-                        link.split('+', 1)[1])))
+                    self._client(ImportChatInviteRequest(link.split("+", 1)[1]))
+                )
             except UserAlreadyParticipantError:
                 if not channel_id:
-                    raise Exception("We can't work only with invite links."
-                                    "Please, provide the channel_id.")
-                self.chat = loop.run_until_complete(
-                    self._client.get_entity(channel_id))
-        if hasattr(self.chat, 'chats'):
+                    raise Exception(
+                        "We can't work only with invite links."
+                        "Please, provide the channel_id."
+                    )
+                self.chat = loop.run_until_complete(self._client.get_entity(channel_id))
+        if hasattr(self.chat, "chats"):
             self.chat = self.chat.chats[0]
         self.link = link
         self.adf = adfilter
         self._cache = []
         self._client.add_event_handler(
             self._cache_update,
-            NewMessage(incoming=True, from_users=self.chat,
-                       func=self.adfilter))
+            NewMessage(incoming=True, from_users=self.chat, func=self.adfilter),
+        )
 
     async def _cache_everything(self):
         clean_cache = []
@@ -99,7 +109,7 @@ class TgParserTemplate:
         self._cache.append(m)
 
     def adfilter(self, m):
-        if hasattr(m, 'messages'):
+        if hasattr(m, "messages"):
             for m_ in m.messages:
                 if not self.adfilter(m_):
                     return False
@@ -112,16 +122,16 @@ class TgParserTemplate:
         if not m.text:
             return True
         if self.adf:
-            text = m.text.replace(self.link, '')
-            if self.link.startswith('http:'):
-                text = text.replace('https' + self.link[4:], '')
-            elif self.link.startswith('https:'):
-                text = text.replace('http' + self.link[5:], '')
-            if 'http' in text:
+            text = m.text.replace(self.link, "")
+            if self.link.startswith("http:"):
+                text = text.replace("https" + self.link[4:], "")
+            elif self.link.startswith("https:"):
+                text = text.replace("http" + self.link[5:], "")
+            if "http" in text:
                 return False
-            if '@' in text:
+            if "@" in text:
                 for i in text.split():
-                    if i.startswith('@') and i.count('@') == 1 and len(i) != 1:
+                    if i.startswith("@") and i.count("@") == 1 and len(i) != 1:
                         return False
         return True
 
@@ -131,25 +141,26 @@ class TgParserTemplate:
         if not self._cache:
             await self._cache_everything()
             if not self._cache:
-                raise ReceiveError(
-                    f"Parser {self.link} seems unable to cache.")
+                raise ReceiveError(f"Parser {self.link} seems unable to cache.")
         media_ind = randint(0, len(self._cache) - 1)
         media = self._cache[media_ind]
         del self._cache[media_ind]
+        logging.debug(self.link + " -> " + str(media.id))
         return media
 
 
 class WebParserTemplate:
-
-    def __init__(self,
-                 url: str,
-                 process: Coroutine,
-                 method: str = 'GET',
-                 headers: dict = {},
-                 timeout: float or int = 10,
-                 ignore_status_code: bool = False,
-                 *args,
-                 **kwargs):
+    def __init__(
+        self,
+        url: str,
+        process: Coroutine,
+        method: str = "GET",
+        headers: dict = {},
+        timeout: float or int = 10,
+        ignore_status_code: bool = False,
+        *args,
+        **kwargs,
+    ):
 
         self._session = HttpClient(headers=headers, timeout=timeout)
         self.process = process
@@ -165,8 +176,7 @@ class WebParserTemplate:
             counter += 1
             try:
                 response = await self._session.send(request)
-                if not self.ignore_status_code\
-                   and response.status_code != codes.OK:
+                if not self.ignore_status_code and response.status_code != codes.OK:
                     continue
                 break
             except (ConnectError, ConnectTimeout):

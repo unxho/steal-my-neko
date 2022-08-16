@@ -35,7 +35,7 @@ Web parsers requires postprocessing. Define your processors at [`smn/parser/_pro
 <summary>Please read before contributing.</summary>
 
 #### Tools
-**Formatter:** [`yapf`](https://github.com/google/yapf)  
+**Formatter:** [`black`](https://github.com/psf/black)  
 **Linter:** [`pylint`](https://github.com/PyCQA/pylint)
 
 #### Always test your changes.  
