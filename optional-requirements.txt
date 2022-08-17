@@ -1,3 +1,4 @@
 orjson>=3.7.5
 uvloop>=0.16.0
 cryptg>=0.3.1
+coloredlogs>=15.0.1

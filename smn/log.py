@@ -1,6 +1,14 @@
 import logging
 import asyncio
 import sys
+
+try:
+    import coloredlogs
+except (ImportError, ModuleNotFoundError):
+    _formatter = logging.Formatter
+else:
+    _formatter = coloredlogs.ColoredFormatter
+
 from .config import LOG_CHAT
 
 
@@ -16,8 +24,8 @@ class TgHandler(logging.Handler):
         asyncio.ensure_future(self.client.send_message(self.target, msg))
 
 
-_main_formatter = logging.Formatter(
-    fmt="\n%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+_main_formatter = _formatter(
+    fmt="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     datefmt="%H:%M:%S",
     style="%",
 )

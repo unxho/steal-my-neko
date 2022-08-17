@@ -5,7 +5,7 @@ import logging
 import sys
 from telethon import TelegramClient
 from telethon.events import NewMessage
-from telethon.errors import BadRequestError
+from telethon.errors import BadRequestError, FileReferenceExpiredError
 from .dubctl import DubsDataFile
 from .parser import UserCli, PARSERS
 from .parser.base import WebParserTemplate, TgParserTemplate, ReceiveError
@@ -24,7 +24,7 @@ log.init(client)
 suspended = False
 
 
-async def post(file, test=False):
+async def post(file, test=False, ids=None, entity=None):
     out = channel if not test else log_chat
     counter = 0
     while counter < 3:
@@ -37,6 +37,13 @@ async def post(file, test=False):
                     file = file[0]
                 await UserCli.send_message(out, file=file)
             return
+        except FileReferenceExpiredError:
+            logging.debug("File reference expired, refetching messages...")
+            file = []
+            # refetching outdated messages
+            async for m in UserCli.iter_messages(entity, ids=ids):
+                file.append(m.media)
+            continue
         except BadRequestError as e:
             logging.debug(e)
             continue
@@ -44,7 +51,9 @@ async def post(file, test=False):
 
 
 async def wait():
-    await asyncio.sleep((60 - datetime.now().minute) * 60)
+    seconds = (60 - datetime.now().minute) * 60
+    logging.debug("Waiting: " + str(seconds))
+    await asyncio.sleep(seconds)
 
 
 async def receiver(parser: WebParserTemplate or TgParserTemplate):
@@ -72,15 +81,19 @@ async def receiver(parser: WebParserTemplate or TgParserTemplate):
     if not isinstance(file, (str, bytes, list)):
         # Message
         file = [file]
+    msg_ids = []
+    entity = None
     if isinstance(file, list):
         # Messages
         file_ = file
         file = []
+        entity = parser.chat
         for f in file_:
             dub_candidate = str(parser.chat.id) + ":" + str(f.id)
             if dub_candidate in dublicates.data or not f.media:
                 logging.debug("Dublicate: " + dub_candidate)
                 return await receiver(choice(PARSERS))
+            msg_ids.append(f.id)
             file.append(f.media)
     elif isinstance(file, str):
         # Link
@@ -93,7 +106,7 @@ async def receiver(parser: WebParserTemplate or TgParserTemplate):
     if dub_candidate:
         await dublicates.update(dub_candidate)
     try:
-        return await post(file)
+        return await post(file, ids=msg_ids, entity=entity)
     except ReceiveError:
         return await receiver(choice(PARSERS))
 
@@ -117,7 +130,7 @@ async def stdin_handler():
         "- post - to force a post\n- suspend - to (un)suspend posting\n- exit - to finish this program.\n\n"
     )
     while True:
-        msg = (await loop.run_in_executor(None, input, "> ")).lower()
+        msg = (await loop.run_in_executor(None, input)).lower()
         if msg == "post":
             try:
                 await receiver(choice(PARSERS))

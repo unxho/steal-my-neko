@@ -22,6 +22,7 @@ UserCli = (
     else None
 )
 loop = asyncio.get_event_loop()
+logger = logging.getLogger("parser")
 
 
 class TgParserTemplate:
@@ -152,12 +153,12 @@ class TgParserTemplate:
         del self._cache[media_ind]
         if not isinstance(media, list) and media.grouped_id in self._known_albums:
             media = self._known_albums.pop(media.grouped_id)
-        if logging.getLogger().isEnabledFor(logging.DEBUG):
+        if logger.isEnabledFor(logging.DEBUG):
             if isinstance(media, list):
                 ids = ", ".join([str(m.id) for m in media])
             else:
                 ids = str(media.id)
-            logging.debug(self.link + " -> " + ids)
+            logger.debug(self.link + " -> " + ids)
         return media
 
 
