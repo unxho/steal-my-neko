@@ -37,15 +37,18 @@ async def post(file, test=False, ids=None, entity=None):
                     file = file[0]
                 await UserCli.send_message(out, file=file)
             return
-        except FileReferenceExpiredError:
+        except BadRequestError as e:
+            if (
+                not isinstance(e, FileReferenceExpiredError)
+                and "FILE_REFERENCE_0_EXPIRED" not in e.message
+            ):
+                logging.debug(e)
+                continue
             logging.debug("File reference expired, refetching messages...")
             file = []
-            # refetching outdated messages
+            # refetching outdated media objects
             async for m in UserCli.iter_messages(entity, ids=ids):
                 file.append(m.media)
-            continue
-        except BadRequestError as e:
-            logging.debug(e)
             continue
     raise ReceiveError(str(file) + " is too big or unreachable.")
 
