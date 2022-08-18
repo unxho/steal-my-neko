@@ -48,6 +48,8 @@ async def post(file, test=False, ids=None, entity=None):
             file = []
             # refetching outdated media objects
             async for m in UserCli.iter_messages(entity, ids=ids):
+                if not m:
+                    raise ReceiveError("Message does not exist.")
                 file.append(m.media)
             continue
     raise ReceiveError(str(file) + " is too big or unreachable.")
