@@ -153,6 +153,9 @@ class TgParserTemplate:
         del self._cache[media_ind]
         if not isinstance(media, list) and media.grouped_id in self._known_albums:
             media = self._known_albums.pop(media.grouped_id)
+            for i, m in enumerate(self._cache):
+                if m.grouped_id == media[0].grouped_id:
+                    del self._cache[i]
             # we need to check the whole group again
             # TODO: or make some classes
             for m in media:
