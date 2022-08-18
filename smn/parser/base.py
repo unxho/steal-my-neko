@@ -153,6 +153,11 @@ class TgParserTemplate:
         del self._cache[media_ind]
         if not isinstance(media, list) and media.grouped_id in self._known_albums:
             media = self._known_albums.pop(media.grouped_id)
+            # we need to check the whole group again
+            # TODO: or make some classes
+            for m in media:
+                if not self.adfilter(m):
+                    raise ReceiveError
         if logger.isEnabledFor(logging.DEBUG):
             if isinstance(media, list):
                 ids = ", ".join([str(m.id) for m in media])
