@@ -161,6 +161,8 @@ class TgParserTemplate:
             for m in media:
                 if not self.adfilter(m):
                     raise ReceiveError
+        if isinstance(media, list):
+            media.reverse()
         if logger.isEnabledFor(logging.DEBUG):
             if isinstance(media, list):
                 ids = ", ".join([str(m.id) for m in media])
