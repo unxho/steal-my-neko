@@ -15,6 +15,17 @@ from telethon.tl.types import MessageEntityTextUrl
 from telethon.tl.functions.channels import JoinChannelRequest
 from telethon.tl.functions.messages import ImportChatInviteRequest
 from telethon.errors.rpcerrorlist import UserAlreadyParticipantError
+
+try:
+    from tqdm.asyncio import tqdm
+except ImportError:
+
+    def tqdm(*args, **kwargs):
+        if args:
+            return args[0]
+        return kwargs.get("iterable", None)
+
+
 from .. import config
 
 UserCli = (
@@ -76,11 +87,17 @@ class TgParserTemplate:
     async def _cache_everything(self):
         clean_cache = []
         _album_queue = {}
-        latest_msg_is_part_of_album = False
         limit = 50
         counter = 0
         latest_msg_is_part_of_album = False
-        async for m in self._client.iter_messages(self.chat):
+        messages = tqdm(
+            self._client.iter_messages(self.chat),
+            total=limit,
+            desc="Caching",
+            leave=False,
+            colour="green",
+        ).__enter__()
+        async for m in messages:
             if m.grouped_id:
                 if not _album_queue.get(m.grouped_id):
                     _album_queue[m.grouped_id] = []
@@ -97,6 +114,7 @@ class TgParserTemplate:
                 clean_cache.append(m)
             if counter > limit:
                 break
+        messages.close()
         for album in _album_queue.values():
             boo = False
             for m in album:
