@@ -154,6 +154,8 @@ class TgParserTemplate:
         if not isinstance(media, list) and media.grouped_id in self._known_albums:
             media = self._known_albums.pop(media.grouped_id)
             for i, m in enumerate(self._cache):
+                if isinstance(m, list):
+                    m = m[0]
                 if m.grouped_id == media[0].grouped_id:
                     del self._cache[i]
             # we need to check the whole group again
@@ -161,7 +163,7 @@ class TgParserTemplate:
             for m in media:
                 if not self.adfilter(m):
                     raise ReceiveError
-        if isinstance(media, list):
+        elif isinstance(media, list):
             media.reverse()
         if logger.isEnabledFor(logging.DEBUG):
             if isinstance(media, list):
