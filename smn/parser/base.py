@@ -142,10 +142,11 @@ class TgParserTemplate:
                         return False
             # received text does not contain ads,
             # checking hidden message entities...
-            for e in m.entities:
-                if isinstance(e, MessageEntityTextUrl):
-                    if e.url != self.link:
-                        return False
+            if m.entities:
+                for e in m.entities:
+                    if isinstance(e, MessageEntityTextUrl):
+                        if e.url != self.link:
+                            return False
 
         return True
 
