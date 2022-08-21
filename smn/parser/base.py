@@ -11,6 +11,7 @@ from httpx import (
 )
 from telethon import TelegramClient
 from telethon.events import NewMessage
+from telethon.tl.types import MessageEntityTextUrl
 from telethon.tl.functions.channels import JoinChannelRequest
 from telethon.tl.functions.messages import ImportChatInviteRequest
 from telethon.errors.rpcerrorlist import UserAlreadyParticipantError
@@ -90,8 +91,8 @@ class TgParserTemplate:
             # album is fully handled now
             if latest_msg_is_part_of_album:
                 counter += 1
+                latest_msg_is_part_of_album = False
             counter += 1
-            latest_msg_is_part_of_album = False
             if self.adfilter(m):
                 clean_cache.append(m)
             if counter > limit:
@@ -139,6 +140,13 @@ class TgParserTemplate:
                 for i in text.split():
                     if i.startswith("@") and i.count("@") == 1 and len(i) != 1:
                         return False
+            # received text does not contain ads,
+            # checking hidden message entities...
+            for e in m.entities:
+                if isinstance(e, MessageEntityTextUrl):
+                    if e.url != self.link:
+                        return False
+
         return True
 
     async def recv(self):
