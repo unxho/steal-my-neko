@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Coroutine
+from typing import Optional, Union, Coroutine
 from random import randint
 from httpx import (
     AsyncClient as HttpClient,
@@ -12,6 +12,7 @@ from httpx import (
 from telethon import TelegramClient
 from telethon.events import NewMessage
 from telethon.tl.types import (
+    TypeMessage,
     MessageEntityTextUrl,
     MessageMediaPoll,
     MessageMediaContact,
@@ -42,6 +43,7 @@ except ImportError:
 from .types import VerifiedList
 from .. import config, utils
 
+
 UserCli = (
     TelegramClient(".nekohelper", config.API_ID, config.API_HASH)
     if config.HELPER_ENABLED
@@ -56,9 +58,9 @@ class TgParserTemplate:
         self,
         link: str,
         *,
-        client: TelegramClient = None,
+        client: Optional[TelegramClient] = None,
         adfilter: bool = True,
-        channel_id=None,
+        channel_id: Optional[int] = None,
     ):
 
         if not client:
@@ -158,7 +160,7 @@ class TgParserTemplate:
 
         self._cache = clean_cache
 
-    async def _cache_update(self, m):
+    async def _cache_update(self, m: TypeMessage):
         m.verified = self.adfilter(m)
         if m.grouped_id:
             if not self._known_albums.get(m.grouped_id):
@@ -169,7 +171,7 @@ class TgParserTemplate:
         if m.verified:
             self._cache.append(m)
 
-    def adfilter(self, m):
+    def adfilter(self, m: TypeMessage) -> bool:
 
         if hasattr(m, "messages"):
             for m_ in m.messages:
@@ -279,7 +281,7 @@ class WebParserTemplate:
         process: Coroutine,
         method: str = "GET",
         headers: dict = {},
-        timeout: float or int = 10,
+        timeout: Union[float, int] = 10,
         ignore_status_code: bool = False,
         *args,
         **kwargs,

@@ -1,11 +1,19 @@
-def format_ids(messages):
-    if isinstance(messages, list):
+from typing import Union, Iterable, Tuple
+from telethon.tl.types import TypeMessage
+
+
+def format_ids(messages: Union[Iterable[TypeMessage], TypeMessage]):
+    if isinstance(messages, Iterable):
         return ", ".join([str(m.id) for m in messages])
     return str(messages.id)
 
 
 async def retry_on_exc(
-    coro, *args, retries: int = 3, exceptions: tuple = (Exception), **kwargs
+    coro,
+    *args,
+    retries: int = 3,
+    exceptions: Union[Tuple[BaseException], BaseException] = Exception,
+    **kwargs,
 ):
     counter = 0
     while counter < retries:

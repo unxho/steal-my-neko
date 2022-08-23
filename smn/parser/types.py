@@ -11,7 +11,7 @@ class VerifiedList(list):
         super().__setitem__(*args)
 
     @property
-    def verified(self):
+    def verified(self) -> bool:
         for i in self:
             if not i.verified:
                 return False

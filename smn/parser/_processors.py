@@ -1,4 +1,6 @@
 """API processors which used in web parsers."""
+from typing import Union
+
 try:
     import orjson as json
 except (ImportError, ModuleNotFoundError):
@@ -10,7 +12,7 @@ class NoFileProvidedError(ValueError):
     pass
 
 
-def simple(r: Response or str or dict, fields: tuple or list or str):
+def simple(r: Union[Response, str, dict], fields: Union[tuple, list, str]):
     """Gets the file url from some specific json field."""
     if isinstance(fields, str):
         fields = [fields]

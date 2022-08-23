@@ -4,9 +4,11 @@ from random import choice
 import logging
 import sys
 from signal import SIGINT
+from typing import Optional, Union, List, NoReturn
 from telethon import TelegramClient
 from telethon.events import NewMessage
 from telethon.errors import BadRequestError, FileReferenceExpiredError
+from telethon.tl.types import TypeMessageMedia, TypeChat
 from .dubctl import DubsDataFile
 from .parser import UserCli, PARSERS
 from .parser.base import WebParserTemplate, TgParserTemplate, ReceiveError
@@ -25,7 +27,12 @@ log.init(client)
 SUSPENDED = False
 
 
-async def post(file, test="--test" in sys.argv, ids=None, entity=None):
+async def post(
+    file: Union[List[TypeMessageMedia], str],
+    test: bool = "--test" in sys.argv,
+    ids: Optional[List[int]] = None,
+    entity: Optional[TypeChat] = None,
+):
     out = channel if not test else log_chat
     try:
         if isinstance(file, str) and file.startswith(("http:", "https:")):
@@ -121,7 +128,7 @@ async def receiver(parser: WebParserTemplate or TgParserTemplate):
         return await receiver(choice(PARSERS))
 
 
-async def worker():
+async def worker() -> NoReturn:
     logging.info("Launched.")
     while True:
         if SUSPENDED:
@@ -134,7 +141,7 @@ async def worker():
         await wait()
 
 
-async def stdin_handler():
+async def stdin_handler() -> NoReturn:
     print(
         "Hello!\nSteal My Neko control commands:\n"
         "- post - to force a post\n"
