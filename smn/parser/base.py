@@ -254,9 +254,12 @@ class WebParserTemplate:
     async def recv(self):
 
         request = Request(self.method, self.url)
-        response = await utils.retry_on_exc(
-            self._session.send, request, exceptions=(ConnectError, ConnectTimeout)
-        )
+        try:
+            response = await utils.retry_on_exc(
+                self._session.send, request, exceptions=(ConnectError, ConnectTimeout)
+            )
+        except Exception:
+            raise ReceiveError
         if not self.ignore_status_code and response.status_code != codes.OK:
             raise ReceiveError
 
