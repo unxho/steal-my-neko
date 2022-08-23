@@ -3,6 +3,7 @@ from datetime import datetime
 from random import choice
 import logging
 import sys
+from signal import SIGINT
 from telethon import TelegramClient
 from telethon.events import NewMessage
 from telethon.errors import BadRequestError, FileReferenceExpiredError
@@ -24,35 +25,31 @@ log.init(client)
 suspended = False
 
 
-async def post(file, test=False, ids=None, entity=None):
+async def post(file, test="--test" in sys.argv, ids=None, entity=None):
     out = channel if not test else log_chat
-    counter = 0
-    while counter < 3:
-        counter += 1
-        try:
-            if isinstance(file, str) and file.startswith(("http:", "https:")):
-                await client.send_message(out, file=file)
-            else:
-                if isinstance(file, list) and len(file) == 1:
-                    file = file[0]
-                await UserCli.send_message(out, file=file)
-            return
-        except BadRequestError as e:
-            if (
-                not isinstance(e, FileReferenceExpiredError)
-                and "FILE_REFERENCE_0_EXPIRED" not in e.message
-            ):
-                logging.debug(e)
-                continue
-            logging.debug("File reference expired, refetching messages...")
-            file = []
-            # refetching outdated media objects
-            async for m in UserCli.iter_messages(entity, ids=ids):
-                if not m:
-                    raise ReceiveError("Message does not exist.")
-                file.append(m.media)
-            continue
-    raise ReceiveError(str(file) + " is too big or unreachable.")
+    try:
+        if isinstance(file, str) and file.startswith(("http:", "https:")):
+            await client.send_message(out, file=file)
+        else:
+            if isinstance(file, list) and len(file) == 1:
+                file = file[0]
+            await UserCli.send_message(out, file=file)
+        return
+    except BadRequestError as e:
+        if (
+            not isinstance(e, FileReferenceExpiredError)
+            and "FILE_REFERENCE_0_EXPIRED" not in e.message
+        ):
+            logging.debug(e)
+            raise ReceiveError(str(file) + " is too big or unreachable.")
+        logging.debug("File reference expired, refetching messages...")
+        file = []
+        # refetching outdated media objects
+        async for m in UserCli.iter_messages(entity, ids=ids):
+            if not m:
+                raise ReceiveError("Message does not exist.")
+            file.append(m.media)
+        await post(file, test, ids, entity)
 
 
 async def wait():
@@ -82,10 +79,12 @@ async def receiver(parser: WebParserTemplate or TgParserTemplate):
         if not parsers:
             parsers = PARSERS
         return await receiver(choice(parsers))
+
     dub_candidate = ""
     if not isinstance(file, (str, bytes, list)):
         # Message
         file = [file]
+
     msg_ids = []
     entity = None
     if isinstance(file, list):
@@ -100,6 +99,7 @@ async def receiver(parser: WebParserTemplate or TgParserTemplate):
                 return await receiver(choice(PARSERS))
             msg_ids.append(f.id)
             file.append(f.media)
+
     elif isinstance(file, str):
         # Link
         dub_candidate = file.split("/")[-1]
@@ -173,5 +173,6 @@ if config.ADMIN:
 
 def main():
 
-    tasks = (loop.create_task(worker()), loop.create_task(stdin_handler()))
+    tasks = (loop.create_task(stdin_handler()), loop.create_task(worker()))
+    loop.add_signal_handler(SIGINT, sys.exit, 0)
     loop.run_until_complete(asyncio.gather(*tasks))

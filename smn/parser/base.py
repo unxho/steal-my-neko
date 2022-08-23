@@ -26,7 +26,8 @@ except ImportError:
         return kwargs.get("iterable", None)
 
 
-from .. import config
+from .types import VerifiedList
+from .. import config, utils
 
 UserCli = (
     TelegramClient(".nekohelper", config.API_ID, config.API_HASH)
@@ -57,6 +58,7 @@ class TgParserTemplate:
             self._client.start()
         except ConnectionError:
             pass
+
         if not link.startswith(("http:", "https:")):
             if not link.startswith("@"):
                 link = "@" + link
@@ -75,12 +77,13 @@ class TgParserTemplate:
                 self.chat = loop.run_until_complete(self._client.get_entity(channel_id))
         if hasattr(self.chat, "chats"):
             self.chat = self.chat.chats[0]
+
         self.link = link
         self.adf = adfilter
         self._cache = []
         self._client.add_event_handler(
             self._cache_update,
-            NewMessage(incoming=True, from_users=self.chat, func=self.adfilter),
+            NewMessage(incoming=True, from_users=self.chat),
         )
         self._known_albums = {}
 
@@ -90,6 +93,7 @@ class TgParserTemplate:
         limit = 50
         counter = 0
         latest_msg_is_part_of_album = False
+
         messages = tqdm(
             self._client.iter_messages(self.chat),
             total=limit,
@@ -97,10 +101,12 @@ class TgParserTemplate:
             leave=False,
             colour="green",
         ).__enter__()
+
         async for m in messages:
+            m.verified = False
             if m.grouped_id:
                 if not _album_queue.get(m.grouped_id):
-                    _album_queue[m.grouped_id] = []
+                    _album_queue[m.grouped_id] = VerifiedList()
                 _album_queue[m.grouped_id].append(m)
                 latest_msg_is_part_of_album = True
                 # force continuing loop without limit checks
@@ -110,42 +116,59 @@ class TgParserTemplate:
                 counter += 1
                 latest_msg_is_part_of_album = False
             counter += 1
+
             if self.adfilter(m):
+                m.verified = True
                 clean_cache.append(m)
+
             if counter > limit:
                 break
+
         messages.close()
+
         for album in _album_queue.values():
             boo = False
-            for m in album:
+            for i, m in enumerate(album):
                 if not self.adfilter(m):
                     boo = True
                     break
+                album[i].verified = True
             if boo:
                 continue
             clean_cache.append(album)
+
         self._cache = clean_cache
 
     async def _cache_update(self, m):
+        m.verified = self.adfilter(m)
         if m.grouped_id:
             if not self._known_albums.get(m.grouped_id):
-                self._known_albums[m.grouped_id] = []
+                self._known_albums[m.grouped_id] = VerifiedList()
             self._known_albums[m.grouped_id].append(m)
-        self._cache.append(m)
+            self._cache.append(m)
+            return
+        if m.verified:
+            self._cache.append(m)
 
     def adfilter(self, m):
+
         if hasattr(m, "messages"):
             for m_ in m.messages:
                 if not self.adfilter(m_):
                     return False
             return True
-        if not m.media or m.sticker:
-            return False
-        if self.adf and (m.fwd_from or m.buttons):
+
+        if (
+            not m.media
+            or m.sticker
+            or (self.adf and (m.fwd_from or m.buttons))
             # ignoring fwds/buttons because it most likely an ad
+        ):
             return False
+
         if not m.text:
             return True
+
         if self.adf:
             text = m.text.replace(self.link, "")
             if self.link.startswith("http:"):
@@ -169,15 +192,18 @@ class TgParserTemplate:
         return True
 
     async def recv(self):
+
         if not self._client:
             raise ReceiveError("Helper disabled.")
         if not self._cache:
             await self._cache_everything()
             if not self._cache:
                 raise ReceiveError(f"Parser {self.link} seems unable to cache.")
+
         media_ind = randint(0, len(self._cache) - 1)
         media = self._cache[media_ind]
         del self._cache[media_ind]
+
         if not isinstance(media, list) and media.grouped_id in self._known_albums:
             media = self._known_albums.pop(media.grouped_id)
             for i, m in enumerate(self._cache):
@@ -186,18 +212,23 @@ class TgParserTemplate:
                 if m.grouped_id == media[0].grouped_id:
                     del self._cache[i]
             # we need to check the whole group again
-            # TODO: or make some classes
-            for m in media:
-                if not self.adfilter(m):
-                    raise ReceiveError
+
         elif isinstance(media, list):
             media.reverse()
+
+        if not media.verified:
+            if logger.isEnabledFor(logging.DEBUG):
+                logging.debug(
+                    "Media not verified: "
+                    + self.link
+                    + " -> "
+                    + utils.format_ids(media)
+                )
+            return await self.recv()
+
         if logger.isEnabledFor(logging.DEBUG):
-            if isinstance(media, list):
-                ids = ", ".join([str(m.id) for m in media])
-            else:
-                ids = str(media.id)
-            logger.debug(self.link + " -> " + ids)
+            logger.debug(self.link + " -> " + utils.format_ids(media))
+
         return media
 
 
@@ -214,7 +245,7 @@ class WebParserTemplate:
         **kwargs,
     ):
 
-        self._session = HttpClient(headers=headers, timeout=timeout)
+        self._session = HttpClient(headers=headers, timeout=timeout, http2=True)
         self.process = process
         self.url, self.method = url, method
         self.ignore_status_code = ignore_status_code
@@ -223,18 +254,11 @@ class WebParserTemplate:
     async def recv(self):
 
         request = Request(self.method, self.url)
-        counter = 0
-        while counter < 3:
-            counter += 1
-            try:
-                response = await self._session.send(request)
-                if not self.ignore_status_code and response.status_code != codes.OK:
-                    continue
-                break
-            except (ConnectError, ConnectTimeout):
-                continue
-        else:
-            raise ReceiveError(f"Connection to {self.url} failed 3 times.")
+        response = await utils.retry_on_exc(
+            self._session.send, request, exceptions=(ConnectError, ConnectTimeout)
+        )
+        if not self.ignore_status_code and response.status_code != codes.OK:
+            raise ReceiveError
 
         return await self.process(response, self.args, self.kwargs)
 
