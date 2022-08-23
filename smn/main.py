@@ -22,7 +22,7 @@ dublicates = DubsDataFile()
 loop = asyncio.get_event_loop()
 loop.run_until_complete(dublicates._post_init())
 log.init(client)
-suspended = False
+SUSPENDED = False
 
 
 async def post(file, test="--test" in sys.argv, ids=None, entity=None):
@@ -124,7 +124,7 @@ async def receiver(parser: WebParserTemplate or TgParserTemplate):
 async def worker():
     logging.info("Launched.")
     while True:
-        if suspended:
+        if SUSPENDED:
             await wait()
             continue
         try:
@@ -151,9 +151,8 @@ async def stdin_handler():
                 logging.exception(e)
                 print("Failed.")
         elif msg == "suspend":
-            global suspended
-            suspended = not suspended
-            print("Done! Status:", suspended)
+            SUSPENDED = not SUSPENDED
+            print("Done! Status:", SUSPENDED)
         elif msg == "exit":
             print("Bye-bye.")
             sys.exit(0)
@@ -177,9 +176,8 @@ if config.ADMIN:
                 logging.exception(e)
                 await event.respond("Failed.")
         elif event.raw_text.lower() == "/suspend":
-            global suspended
-            suspended = not suspended
-            await event.respond("Done! Status: " + str(suspended))
+            SUSPENDED = not SUSPENDED
+            await event.respond("Done! Status: " + str(SUSPENDED))
 
 
 def main():
