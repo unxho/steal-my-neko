@@ -9,8 +9,8 @@
 
 ## About
 Awesome Telegram parser & poster configured to steal nekos.  
-Script uses web and telegram parsers. Telegram parser requires user account to receive and use file_id directly.
-Telegram parser supports ad block which automatically detects ad links and mentions. Unfortunately, ad blocking also blocks any album for now.
+Script uses web and telegram parsers. Telegram parser requires user account to receive and use files directly.
+Telegram parser supports ad block which automatically detects ad links and mentions.  
 
 Started in June 2021
 ## Installation
@@ -23,7 +23,14 @@ You can additionaly install `optional-requirements.txt` which will make the scri
 ```mv {example.,}config.ini```  
 And fill it in.
 4. Start the script:  
-```python -m smn```
+```python -m smn```  
+  
+Debugging avalible using `--debug` flag.
+
+## Adding custom sources
+All sources are in [`smn/parser/__init__.py`](https://github.com/unxho/steal-my-neko/blob/master/smn/parser/__init__.py).  
+Private telegram sources must be configured using `channel_id` keyword argument to avoid losing channel entity.  
+Web parsers requires postprocessing. Define your processors at [`smn/parser/_processors.py`](https://github.com/unxho/steal-my-neko/blob/master/smn/parser/_processors.py).
 
 ## Adding custom sources
 All sources are in [`smn/parser/__init__.py`](https://github.com/unxho/steal-my-neko/blob/master/smn/parser/__init__.py).  
