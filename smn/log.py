@@ -51,4 +51,5 @@ def init(cli):
     logging.getLogger().addHandler(TgHandler(cli))
     logging.getLogger().setLevel(lvl)
     logging.getLogger("telethon").setLevel(logging.WARNING)
+    logging.getLogger("hpack").setLevel(logging.WARNING)
     logging.captureWarnings(True)
