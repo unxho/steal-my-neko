@@ -14,16 +14,25 @@ Telegram parser supports ad block which automatically detects ad links and menti
 
 Started in June 2021
 ## Installation
-1. Clone repository:  
-```git clone https://github.com/unxho/steal-my-neko && cd steal-my-neko```  
-2. Install requirements:  
-```pip install -r requirements.txt```  
-You can additionaly install `optional-requirements.txt` which will make the script faster, but also may cause os-related bugs.  
-3. Rename example config:  
-```mv {example.,}config.ini```  
-And fill it in.
-4. Start the script:  
-```python -m smn```  
+1. **Clone repository:**  
+   ```git clone https://github.com/unxho/steal-my-neko && cd steal-my-neko```  
+2. **Install requirements:**  
+   ```pip install -r requirements.txt```  
+  
+   You can additionaly install `optional-requirements.txt` which will make the script faster, but also may cause os-related bugs.
+   <details><summary><b>Using <code><a href="https://github.com/python-poetry/poetry">poetry</a></code></b></summary>
+   <code>poetry install</code><br>
+   With optional requirements:<br>
+   <code>poetry install -E speedups -E ui</code>
+   </details>  
+3. **Rename example config:**  
+   ```mv {example.,}config.ini```  
+   **And fill it in.**
+4. **Start the script:**  
+   ```python -m smn```
+   <details><summary><b>Using <code><a href="https://github.com/python-poetry/poetry">poetry</a></code></b></summary>
+   <code>poetry run python -m smn</code>
+   </details>
   
 Debugging avalible using `--debug` flag.
 
