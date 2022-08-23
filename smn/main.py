@@ -41,13 +41,16 @@ async def post(file, test="--test" in sys.argv, ids=None, entity=None):
             and "FILE_REFERENCE_0_EXPIRED" not in e.message
         ):
             logging.debug(e)
-            raise ReceiveError(str(file) + " is too big or unreachable.")
+            raise ReceiveError(
+                str(file) + " is too big or unreachable."
+            ) from e
+
         logging.debug("File reference expired, refetching messages...")
         file = []
         # refetching outdated media objects
         async for m in UserCli.iter_messages(entity, ids=ids):
             if not m:
-                raise ReceiveError("Message does not exist.")
+                raise ReceiveError("Message does not exist.") from e
             file.append(m.media)
         await post(file, test, ids, entity)
 
@@ -68,7 +71,9 @@ async def receiver(parser: WebParserTemplate or TgParserTemplate):
     """
     if config.FALLBACK:
         async for latest_msg in UserCli.iter_messages(config.CHANNEL, 1):
-            if (datetime.now() - latest_msg.date).seconds < config.FALLBACK_TIMEOUT:
+            if (
+                datetime.now() - latest_msg.date
+            ).seconds < config.FALLBACK_TIMEOUT:
                 return
     try:
         file = await parser.recv()
@@ -132,7 +137,9 @@ async def worker():
 async def stdin_handler():
     print(
         "Hello!\nSteal My Neko control commands:\n"
-        "- post - to force a post\n- suspend - to (un)suspend posting\n- exit - to finish this program.\n\n"
+        "- post - to force a post\n"
+        "- suspend - to (un)suspend posting\n"
+        "- exit - to finish this program.\n\n"
     )
     while True:
         msg = (await loop.run_in_executor(None, input)).lower()
@@ -155,7 +162,11 @@ async def stdin_handler():
 if config.ADMIN:
 
     @client.on(
-        NewMessage(from_users=config.ADMIN, incoming=True, func=lambda m: m.raw_text)
+        NewMessage(
+            from_users=config.ADMIN,
+            incoming=True,
+            func=lambda m: m.raw_text,
+        )
     )
     async def bot_handler(event):
         if event.raw_text.lower() == "/post":

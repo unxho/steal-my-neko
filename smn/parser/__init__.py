@@ -5,9 +5,15 @@ from ._processors import nekoslife, randomcat, nekosbest, nekosfun, waifupics
 
 NekosLifeParser = WebParserTemplate("https://nekos.life/api/neko", nekoslife)
 RandomCatParser = WebParserTemplate("https://aws.random.cat/meow", randomcat)
-NekosBestParser = WebParserTemplate("https://nekos.best/api/v2/neko", nekosbest)
-NekosFunParser = WebParserTemplate("http://api.nekos.fun:8080/api/neko", nekosfun)
-WaifuPicsParser = WebParserTemplate("https://api.waifu.pics/sfw/neko", waifupics)
+NekosBestParser = WebParserTemplate(
+    "https://nekos.best/api/v2/neko", nekosbest
+)
+NekosFunParser = WebParserTemplate(
+    "http://api.nekos.fun:8080/api/neko", nekosfun
+)
+WaifuPicsParser = WebParserTemplate(
+    "https://api.waifu.pics/sfw/neko", waifupics
+)
 
 CatsCatsParser = TgParserTemplate("cats_cats", adfilter=False)
 NekoArchiveEroParser = TgParserTemplate(

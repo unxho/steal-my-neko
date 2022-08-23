@@ -75,11 +75,15 @@ class TgParserTemplate:
         if not link.startswith(("http:", "https:")):
             if not link.startswith("@"):
                 link = "@" + link
-            self.chat = loop.run_until_complete(self._client(JoinChannelRequest(link)))
+            self.chat = loop.run_until_complete(
+                self._client(JoinChannelRequest(link))
+            )
         else:
             try:
                 self.chat = loop.run_until_complete(
-                    self._client(ImportChatInviteRequest(link.split("+", 1)[1]))
+                    self._client(
+                        ImportChatInviteRequest(link.split("+", 1)[1])
+                    )
                 )
             except UserAlreadyParticipantError:
                 if not channel_id:
@@ -87,7 +91,9 @@ class TgParserTemplate:
                         "We can't work only with invite links."
                         "Please, provide the channel_id."
                     )
-                self.chat = loop.run_until_complete(self._client.get_entity(channel_id))
+                self.chat = loop.run_until_complete(
+                    self._client.get_entity(channel_id)
+                )
         if hasattr(self.chat, "chats"):
             self.chat = self.chat.chats[0]
 
@@ -175,7 +181,7 @@ class TgParserTemplate:
             not m.media
             or m.sticker
             or isinstance(
-                m,
+                m.media,
                 (
                     MessageMediaWebPage,
                     MessageMediaVenue,
@@ -227,13 +233,18 @@ class TgParserTemplate:
         if not self._cache:
             await self._cache_everything()
             if not self._cache:
-                raise ReceiveError(f"Parser {self.link} seems unable to cache.")
+                raise ReceiveError(
+                    f"Parser {self.link} seems unable to cache."
+                )
 
         media_ind = randint(0, len(self._cache) - 1)
         media = self._cache[media_ind]
         del self._cache[media_ind]
 
-        if not isinstance(media, list) and media.grouped_id in self._known_albums:
+        if (
+            not isinstance(media, list)
+            and media.grouped_id in self._known_albums
+        ):
             media = self._known_albums.pop(media.grouped_id)
             for i, m in enumerate(self._cache):
                 if isinstance(m, list):
@@ -274,7 +285,9 @@ class WebParserTemplate:
         **kwargs,
     ):
 
-        self._session = HttpClient(headers=headers, timeout=timeout, http2=True)
+        self._session = HttpClient(
+            headers=headers, timeout=timeout, http2=True
+        )
         self.process = process
         self.url, self.method = url, method
         self.ignore_status_code = ignore_status_code
@@ -282,13 +295,15 @@ class WebParserTemplate:
 
     async def recv(self):
 
-        request = Request(self.method, self.url)
         try:
             response = await utils.retry_on_exc(
-                self._session.send, request, exceptions=(ConnectError, ConnectTimeout)
+                self._session.send,
+                Request(self.method, self.url),
+                exceptions=(ConnectError, ConnectTimeout),
             )
         except Exception:
             raise ReceiveError
+
         if not self.ignore_status_code and response.status_code != codes.OK:
             raise ReceiveError
 
