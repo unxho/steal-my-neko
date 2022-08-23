@@ -11,7 +11,20 @@ from httpx import (
 )
 from telethon import TelegramClient
 from telethon.events import NewMessage
-from telethon.tl.types import MessageEntityTextUrl
+from telethon.tl.types import (
+    MessageEntityTextUrl,
+    MessageMediaPoll,
+    MessageMediaContact,
+    MessageMediaGeo,
+    MessageMediaDice,
+    MessageMediaEmpty,
+    MessageMediaGame,
+    MessageMediaInvoice,
+    MessageMediaGeoLive,
+    MessageMediaVenue,
+    MessageMediaWebPage,
+    MessageMediaUnsupported,
+)
 from telethon.tl.functions.channels import JoinChannelRequest
 from telethon.tl.functions.messages import ImportChatInviteRequest
 from telethon.errors.rpcerrorlist import UserAlreadyParticipantError
@@ -161,6 +174,22 @@ class TgParserTemplate:
         if (
             not m.media
             or m.sticker
+            or isinstance(
+                m,
+                (
+                    MessageMediaWebPage,
+                    MessageMediaVenue,
+                    MessageMediaGeoLive,
+                    MessageMediaInvoice,
+                    MessageMediaContact,
+                    MessageMediaGame,
+                    MessageMediaEmpty,
+                    MessageMediaDice,
+                    MessageMediaGeo,
+                    MessageMediaPoll,
+                    MessageMediaUnsupported,
+                ),
+            )
             or (self.adf and (m.fwd_from or m.buttons))
             # ignoring fwds/buttons because it most likely an ad
         ):
