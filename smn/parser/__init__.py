@@ -31,7 +31,7 @@ RandomCatParser = WebParserTemplate(
     "https://aws.random.cat/meow", simple, "file"
 )
 NekosBestParser = WebParserTemplate(
-    "https://nekos.best/api/v2/neko", simple, ("results", "url")
+    "https://nekos.best/api/v2/neko", simple, "results", "url"
 )
 NekosFunParser = WebParserTemplate(
     "http://api.nekos.fun:8080/api/neko", simple, "image"
