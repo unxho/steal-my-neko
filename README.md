@@ -14,18 +14,32 @@ Telegram parser supports ad block which automatically detects ad links and menti
 
 Started in June 2021
 ## Installation
-1. Clone repository:  
-```git clone https://github.com/unxho/steal-my-neko && cd steal-my-neko```  
-2. Install requirements:  
-```pip install -r requirements.txt```  
-You can additionaly install `optional-requirements.txt` which will make the script faster, but also may cause os-related bugs.  
-3. Rename example config:  
-```mv {example.,}config.ini```  
-And fill it in.
-4. Start the script:  
-```python -m smn```  
+1. **Clone repository:**  
+   ```git clone https://github.com/unxho/steal-my-neko && cd steal-my-neko```  
+2. **Install requirements:**  
+   ```pip install -r requirements.txt```  
+  
+   You can additionaly install `optional-requirements.txt` which will make the script faster, but also may cause os-related bugs.
+   <details><summary><b>Using <code><a href="https://github.com/python-poetry/poetry">poetry</a></code></b></summary>
+   <code>poetry install</code><br>
+   With optional requirements:<br>
+   <code>poetry install -E speedups -E ui</code>
+   </details>  
+3. **Rename example config:**  
+   ```mv {example.,}config.ini```  
+   **And fill it in.**
+4. **Start the script:**  
+   ```python -m smn```
+   <details><summary><b>Using <code><a href="https://github.com/python-poetry/poetry">poetry</a></code></b></summary>
+   <code>poetry run python -m smn</code>
+   </details>
   
 Debugging avalible using `--debug` flag.
+
+## Adding custom sources
+All sources are in [`smn/parser/__init__.py`](https://github.com/unxho/steal-my-neko/blob/master/smn/parser/__init__.py).  
+Private telegram sources must be configured using `channel_id` keyword argument to avoid losing channel entity.  
+Web parsers requires postprocessing. Define your processors at [`smn/parser/_processors.py`](https://github.com/unxho/steal-my-neko/blob/master/smn/parser/_processors.py).
 
 ## Adding custom sources
 All sources are in [`smn/parser/__init__.py`](https://github.com/unxho/steal-my-neko/blob/master/smn/parser/__init__.py).  
@@ -37,7 +51,7 @@ Web parsers requires postprocessing. Define your processors at [`smn/parser/_pro
 <summary>Please read before contributing.</summary>
 
 #### Tools
-**Formatter:** [`yapf`](https://github.com/google/yapf)  
+**Formatter:** [`black`](https://github.com/psf/black)  
 **Linter:** [`pylint`](https://github.com/PyCQA/pylint)
 
 #### Always test your changes.  
