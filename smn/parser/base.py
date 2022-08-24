@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Optional, Union, Coroutine
+from typing import Optional, Union, Callable
 from random import randint
 from httpx import (
     AsyncClient as HttpClient,
@@ -278,12 +278,12 @@ class WebParserTemplate:
     def __init__(
         self,
         url: str,
-        process: Coroutine,
+        process: Callable,
+        *args,
         method: str = "GET",
         headers: dict = {},
         timeout: Union[float, int] = 10,
         ignore_status_code: bool = False,
-        *args,
         **kwargs,
     ):
 
@@ -308,8 +308,10 @@ class WebParserTemplate:
 
         if not self.ignore_status_code and response.status_code != codes.OK:
             raise ReceiveError
-
-        return await self.process(response, self.args, self.kwargs)
+        if asyncio.iscoroutinefunction(self.process):
+            return await self.process(response, self.args, self.kwargs)
+        else:
+            return self.process(response, self.args, self.kwargs)
 
 
 class ReceiveError(ConnectError):
