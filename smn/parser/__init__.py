@@ -11,11 +11,12 @@ WebParserTemplate:
     — link to the web api
     — process — coroutine defined at _processors.py.
                 parser calls it using Response, args, kwargs as three arguments.
+    – *args
     — method — http method which will be used to fetch the api
     – headers
     – timeout
     – ignore_status_code
-    – *args, **kwargs – 2nd and 3rd arguments to the process
+    – **kwargs
 """
 
 __all__ = ["base", "UserCli", "PARSERS"]
