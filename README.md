@@ -41,11 +41,6 @@ All sources are in [`smn/parser/__init__.py`](https://github.com/unxho/steal-my-
 Private telegram sources must be configured using `channel_id` keyword argument to avoid losing channel entity.  
 Web parsers requires postprocessing. Define your processors at [`smn/parser/_processors.py`](https://github.com/unxho/steal-my-neko/blob/master/smn/parser/_processors.py).
 
-## Adding custom sources
-All sources are in [`smn/parser/__init__.py`](https://github.com/unxho/steal-my-neko/blob/master/smn/parser/__init__.py).  
-Private telegram sources must be configured using `channel_id` keyword argument to avoid losing channel entity.  
-Web parsers requires postprocessing. Define your processors at [`smn/parser/_processors.py`](https://github.com/unxho/steal-my-neko/blob/master/smn/parser/_processors.py).
-
 ## Contributing
 <details>
 <summary>Please read before contributing.</summary>
