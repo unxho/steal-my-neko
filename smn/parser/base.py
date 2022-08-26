@@ -106,7 +106,6 @@ class TgParserTemplate:
             self._cache_update,
             NewMessage(incoming=True, from_users=self.chat),
         )
-        self._known_albums = {}
 
     async def _cache_everything(self):
         clean_cache = []
@@ -163,11 +162,19 @@ class TgParserTemplate:
     async def _cache_update(self, m: TypeMessage):
         m.verified = self.adfilter(m)
         if m.grouped_id:
-            if not self._known_albums.get(m.grouped_id):
-                self._known_albums[m.grouped_id] = VerifiedList()
-            self._known_albums[m.grouped_id].append(m)
-            self._cache.append(m)
+            i = utils.search(
+                self._cache,
+                lambda i: i[0].grouped_id == m.grouped_id
+                if isinstance(i, list)
+                else False,
+            )
+            if i == None:
+                self._cache.append(VerifiedList())
+                i = len(self._cache) - 1  # -1 seems insecure
+                self._cache[i].must_not_be_reversed = True
+            self._cache[i].append(m)
             return
+
         if m.verified:
             self._cache.append(m)
 
@@ -243,30 +250,25 @@ class TgParserTemplate:
         media = self._cache[media_ind]
         del self._cache[media_ind]
 
-        if (
-            not isinstance(media, list)
-            and media.grouped_id in self._known_albums
-        ):
-            media = self._known_albums.pop(media.grouped_id)
-            for i, m in enumerate(self._cache):
-                if isinstance(m, list):
-                    m = m[0]
-                if m.grouped_id == media[0].grouped_id:
-                    del self._cache[i]
-            # we need to check the whole group again
-
-        elif isinstance(media, list):
-            media.reverse()
-
         if not media.verified:
             if logger.isEnabledFor(logging.DEBUG):
-                logging.debug(
+                logger.debug(
                     "Media not verified: "
                     + self.link
                     + " -> "
                     + utils.format_ids(media)
                 )
             return await self.recv()
+
+        if isinstance(media, list):
+
+            if (
+                hasattr(media, "must_not_be_reversed")
+                and media.must_not_be_reversed
+            ):
+                pass
+            else:
+                media.reverse()
 
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(self.link + " -> " + utils.format_ids(media))

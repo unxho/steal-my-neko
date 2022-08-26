@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "steal-my-neko"
-version = "0.6.0"
+version = "0.6.1"
 description = "🐈 Awesome Telegram parser & poster configured to steal nekos."
 repository = "https://github.com/unxho/steal-my-neko"
 authors = ["unxho <u@n.xho>"]

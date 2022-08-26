@@ -1,5 +1,4 @@
 *.session*
 __pycache__
-.dubdata
-config.json
-config.ini
+.dubdata*
+config.*

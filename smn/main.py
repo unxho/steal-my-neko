@@ -158,6 +158,7 @@ async def stdin_handler() -> NoReturn:
                 logging.exception(e)
                 print("Failed.")
         elif msg == "suspend":
+            global SUSPENDED
             SUSPENDED = not SUSPENDED
             print("Done! Status:", SUSPENDED)
         elif msg == "exit":
@@ -183,6 +184,7 @@ if config.ADMIN:
                 logging.exception(e)
                 await event.respond("Failed.")
         elif event.raw_text.lower() == "/suspend":
+            global SUSPENDED
             SUSPENDED = not SUSPENDED
             await event.respond("Done! Status: " + str(SUSPENDED))
 
