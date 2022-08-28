@@ -4,7 +4,7 @@ import sys
 
 try:
     import coloredlogs
-except (ImportError, ModuleNotFoundError):
+except ImportError:
     _formatter = logging.Formatter
 else:
     _formatter = coloredlogs.ColoredFormatter

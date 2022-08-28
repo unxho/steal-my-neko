@@ -15,4 +15,4 @@ class VerifiedList(list):
         for i in self:
             if not i.verified:
                 return False
-            return True
+        return True

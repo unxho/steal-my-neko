@@ -4,7 +4,7 @@ from random import choice
 import logging
 import sys
 from signal import SIGINT
-from typing import Optional, Union, List, NoReturn
+from typing import Optional, Union, List, Iterable, NoReturn
 from telethon import TelegramClient
 from telethon.events import NewMessage
 from telethon.errors import BadRequestError, FileReferenceExpiredError
@@ -30,7 +30,7 @@ SUSPENDED = False
 async def post(
     file: Union[List[TypeMessageMedia], str],
     test: bool = "--test" in sys.argv,
-    ids: Optional[List[int]] = None,
+    ids: Optional[Iterable[int]] = None,
     entity: Optional[TypeChat] = None,
 ):
     out = channel if not test else log_chat
@@ -68,7 +68,7 @@ async def wait():
     await asyncio.sleep(seconds)
 
 
-async def receiver(parser: WebParserTemplate or TgParserTemplate):
+async def receiver(parser: Union[WebParserTemplate, TgParserTemplate]):
     """
     Main parse wrapper.
 
