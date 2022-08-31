@@ -7,7 +7,7 @@ authors = ["unxho <u@n.xho>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-telethon = { git = "https://github.com/LonamiWebs/Telethon", branch = "v1.24" }
+telethon = { url = "https://github.com/LonamiWebs/Telethon/archive/v1.24.zip" }
 httpx = { version = "^0.23", extras = ["http2"] }
 aiofiles = "^0.8"
 orjson = { version = "^3.7.5", optional = true }

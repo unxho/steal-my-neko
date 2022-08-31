@@ -37,11 +37,11 @@ async def post(
     out = channel if not test else log_chat
     try:
         if isinstance(file, str) and file.startswith(("http:", "https:")):
-            await client.send_message(out, file=file)
+            await client.send_message(out, config.CAPTION, file=file)
         else:
             if isinstance(file, list) and len(file) == 1:
                 file = file[0]
-            await UserCli.send_message(out, file=file)
+            await UserCli.send_message(out, config.CAPTION, file=file)
         return
     except BadRequestError as e:
         if (

@@ -27,6 +27,7 @@ POST_ON_FIRST_RUN = __config.getboolean("posting", "post_on_first_run")
 WAIT_UNTIL_NEW_HOUR = __config.getboolean(
     "posting", "wait_until_new_hour_first"
 )
+CAPTION = __config.get("posting", "caption")
 
 ADMIN = __config.getint("admin", "id")
 

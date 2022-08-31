@@ -28,7 +28,11 @@ from telethon.tl.types import (
 )
 from telethon.tl.functions.channels import JoinChannelRequest
 from telethon.tl.functions.messages import ImportChatInviteRequest
-from telethon.errors.rpcerrorlist import UserAlreadyParticipantError
+from telethon.errors.rpcerrorlist import (
+    UserAlreadyParticipantError,
+    InviteRequestSentError,
+    ChannelPrivateError,
+)
 
 try:
     from tqdm.asyncio import tqdm
@@ -96,6 +100,18 @@ class TgParserTemplate:
                 self.chat = loop.run_until_complete(
                     self._client.get_entity(channel_id)
                 )
+            except InviteRequestSentError:
+                loop.run_until_complete(asyncio.sleep(1))
+                while True:
+                    try:
+                        self.chat = loop.run_until_complete(
+                            self._client.get_entity(channel_id)
+                        )
+                        break
+                    except (ChannelPrivateError, ValueError):
+                        # lets wait...
+                        loop.run_until_complete(asyncio.sleep(10))
+
         if hasattr(self.chat, "chats"):
             self.chat = self.chat.chats[0]
 
