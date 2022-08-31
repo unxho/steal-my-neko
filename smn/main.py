@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime
-from random import choice
+from random import choice, randint
 import logging
 import sys
 from signal import SIGINT
@@ -25,6 +25,7 @@ loop = asyncio.get_event_loop()
 loop.run_until_complete(dublicates._post_init())
 log.init(client)
 SUSPENDED = False
+FIRST_RUN = True
 
 
 async def post(
@@ -63,7 +64,15 @@ async def post(
 
 
 async def wait():
-    seconds = (60 - datetime.now().minute) * 60
+
+    global FIRST_RUN
+    if FIRST_RUN and config.WAIT_UNTIL_NEW_HOUR:
+        seconds = (60 - datetime.now().minute) * 60
+    elif config.FREQUENCY_AS_RANGE and len(config.FREQUENCY) == 2:
+        seconds = randint(*config.FREQUENCY)
+    else:
+        seconds = choice(config.FREQUENCY)
+
     logging.debug("Waiting: " + str(seconds))
     await asyncio.sleep(seconds)
 
@@ -130,14 +139,18 @@ async def receiver(parser: Union[WebParserTemplate, TgParserTemplate]):
 
 async def worker() -> NoReturn:
     logging.info("Launched.")
+    global FIRST_RUN
     while True:
         if SUSPENDED:
             await wait()
             continue
+        if FIRST_RUN and not config.POST_ON_FIRST_RUN:
+            await wait()
         try:
             await receiver(choice(PARSERS))
         except BaseException as e:
             logging.exception(e)
+        FIRST_RUN = False
         await wait()
 
 

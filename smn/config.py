@@ -21,6 +21,13 @@ LOG_CHAT = __config.getint("target", "log_chat")
 FALLBACK = __config.getboolean("posting", "fallback")
 FALLBACK_TIMEOUT = __config.getint("posting", "fallback_timeout")
 
+FREQUENCY = [int(i) for i in __config.get("posting", "frequency").split(",")]
+FREQUENCY_AS_RANGE = __config.getboolean("posting", "frequency_as_range")
+POST_ON_FIRST_RUN = __config.getboolean("posting", "post_on_first_run")
+WAIT_UNTIL_NEW_HOUR = __config.getboolean(
+    "posting", "wait_until_new_hour_first"
+)
+
 ADMIN = __config.getint("admin", "id")
 
 if not HELPER_ENABLED and FALLBACK:
