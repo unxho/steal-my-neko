@@ -1,37 +1,33 @@
 import asyncio
 import logging
-from typing import Optional, Union, Callable
 from random import randint
-from httpx import (
-    AsyncClient as HttpClient,
-    codes,
-    Request,
-    ConnectTimeout,
-    ConnectError,
-)
+from typing import Callable, List, Optional, Union
+
+from httpx import AsyncClient as HttpClient
+from httpx import ConnectError, ConnectTimeout, Request, codes
 from telethon import TelegramClient
+from telethon.errors.rpcerrorlist import (
+    ChannelPrivateError,
+    InviteRequestSentError,
+    UserAlreadyParticipantError,
+)
 from telethon.events import NewMessage
+from telethon.tl.functions.channels import JoinChannelRequest
+from telethon.tl.functions.messages import ImportChatInviteRequest
 from telethon.tl.types import (
-    TypeMessage,
     MessageEntityTextUrl,
-    MessageMediaPoll,
     MessageMediaContact,
-    MessageMediaGeo,
     MessageMediaDice,
     MessageMediaEmpty,
     MessageMediaGame,
-    MessageMediaInvoice,
+    MessageMediaGeo,
     MessageMediaGeoLive,
+    MessageMediaInvoice,
+    MessageMediaPoll,
+    MessageMediaUnsupported,
     MessageMediaVenue,
     MessageMediaWebPage,
-    MessageMediaUnsupported,
-)
-from telethon.tl.functions.channels import JoinChannelRequest
-from telethon.tl.functions.messages import ImportChatInviteRequest
-from telethon.errors.rpcerrorlist import (
-    UserAlreadyParticipantError,
-    InviteRequestSentError,
-    ChannelPrivateError,
+    TypeMessage,
 )
 
 try:
@@ -44,9 +40,8 @@ except ImportError:
         return kwargs.get("iterable", None)
 
 
-from .types import VerifiedList
 from .. import config, utils
-
+from .types import VerifiedList
 
 UserCli = (
     TelegramClient(".nekohelper", config.API_ID, config.API_HASH)
@@ -65,6 +60,7 @@ class TgParserTemplate:
         client: Optional[TelegramClient] = None,
         adfilter: bool = True,
         channel_id: Optional[int] = None,
+        allowed_links: List[str] = [],
     ):
 
         if not client:
@@ -117,6 +113,7 @@ class TgParserTemplate:
 
         self.link = link
         self.adf = adfilter
+        self.allowed_links = allowed_links
         self._cache = []
         self._client.add_event_handler(
             self._cache_update,
@@ -184,7 +181,7 @@ class TgParserTemplate:
                 if isinstance(i, list)
                 else False,
             )
-            if i == None:
+            if i == None:  # noqa
                 self._cache.append(VerifiedList())
                 i = len(self._cache) - 1  # -1 seems insecure
                 self._cache[i].must_not_be_reversed = True
@@ -235,6 +232,8 @@ class TgParserTemplate:
                 text = text.replace("https" + self.link[4:], "")
             elif self.link.startswith("https:"):
                 text = text.replace("http" + self.link[5:], "")
+            for link in self.allowed_links:
+                text = text.replace(link, "")
             if "http" in text:
                 return False
             if "@" in text:
@@ -246,7 +245,7 @@ class TgParserTemplate:
             if m.entities:
                 for e in m.entities:
                     if isinstance(e, MessageEntityTextUrl):
-                        if e.url != self.link:
+                        if e.url not in [self.link] + self.allowed_links:
                             return False
 
         return True

@@ -7,14 +7,14 @@ authors = ["unxho <u@n.xho>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-telethon = { url = "https://github.com/LonamiWebs/Telethon/archive/v1.24.zip" }
-httpx = { version = "^0.23", extras = ["http2"] }
-aiofiles = "^0.8"
-orjson = { version = "^3.7.5", optional = true }
-uvloop = { version = "^0.16", optional = true }
-cryptg = { version = "^0.3.1", optional = true }
+telethon = "^1.26.1"
+httpx = { version = "^0.23.3", extras = ["http2"] }
+aiofile = "^3.8.1"
+orjson = { version = "^3.8.5", optional = true }
+uvloop = { version = "^0.17", optional = true }
+cryptg = { version = "^0.4", optional = true }
 coloredlogs = { version = "^15.0.1", optional = true }
-tqdm = { version = "^4.64", optional = true }
+tqdm = { version = "^4.64.1", optional = true }
 
 [tool.poetry.extras]
 speedups = ["orjson", "uvloop", "cryptg"]

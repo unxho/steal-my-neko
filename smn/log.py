@@ -1,5 +1,5 @@
-import logging
 import asyncio
+import logging
 import sys
 
 try:
@@ -13,7 +13,9 @@ from .config import LOG_CHAT
 
 
 class TgHandler(logging.Handler):
-    def __init__(self, client: "TelegramClient", target: int = LOG_CHAT):
+    def __init__(
+        self, client: "TelegramClient", target: int = LOG_CHAT  # noqa
+    ):
         super().__init__(0)
         self.client = client
         self.target = target

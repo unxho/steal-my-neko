@@ -1,4 +1,4 @@
-import aiofiles
+from aiofile import async_open
 
 
 class DubsDataFile:
@@ -10,7 +10,7 @@ class DubsDataFile:
     async def _post_init(self):
         data = []
         try:
-            async with aiofiles.open(self.file, mode="r") as f:
+            async with async_open(self.file, mode="r") as f:
                 async for line in f:
                     data.append(line.rstrip("\n"))
         except FileNotFoundError:
@@ -24,5 +24,5 @@ class DubsDataFile:
         await self.save()
 
     async def save(self):
-        async with aiofiles.open(self.file, mode="w") as f:
+        async with async_open(self.file, mode="w") as f:
             await f.write("\n".join(self.data))
