@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Optional, Union, Callable
+from typing import Optional, Union, Callable, List
 from random import randint
 from httpx import (
     AsyncClient as HttpClient,
@@ -65,6 +65,7 @@ class TgParserTemplate:
         client: Optional[TelegramClient] = None,
         adfilter: bool = True,
         channel_id: Optional[int] = None,
+        allowed_links: List[str] = [],
     ):
 
         if not client:
@@ -117,6 +118,7 @@ class TgParserTemplate:
 
         self.link = link
         self.adf = adfilter
+        self.allowed_links = allowed_links
         self._cache = []
         self._client.add_event_handler(
             self._cache_update,
@@ -235,6 +237,8 @@ class TgParserTemplate:
                 text = text.replace("https" + self.link[4:], "")
             elif self.link.startswith("https:"):
                 text = text.replace("http" + self.link[5:], "")
+            for link in self.allowed_links:
+                text = text.replace(link, "")
             if "http" in text:
                 return False
             if "@" in text:
@@ -246,7 +250,7 @@ class TgParserTemplate:
             if m.entities:
                 for e in m.entities:
                     if isinstance(e, MessageEntityTextUrl):
-                        if e.url != self.link:
+                        if e.url not in [self.link] + self.allowed_links:
                             return False
 
         return True
