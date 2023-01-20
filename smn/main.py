@@ -203,7 +203,6 @@ if config.ADMIN:
 
 
 def main():
-
     tasks = (loop.create_task(stdin_handler()), loop.create_task(worker()))
     loop.add_signal_handler(SIGINT, sys.exit, 0)
     loop.run_until_complete(asyncio.gather(*tasks))
