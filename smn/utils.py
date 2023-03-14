@@ -1,4 +1,5 @@
-from typing import Union, Iterable, Tuple, Callable, Any
+from typing import Any, Callable, Iterable, Tuple, Union
+
 from telethon.tl.types import TypeMessage
 
 

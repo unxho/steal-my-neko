@@ -21,8 +21,8 @@ WebParserTemplate:
 
 __all__ = ["base", "UserCli", "PARSERS"]
 
-from .base import WebParserTemplate, TgParserTemplate, UserCli
 from ._processors import simple
+from .base import TgParserTemplate, UserCli, WebParserTemplate
 
 NekosLifeParser = WebParserTemplate(
     "https://nekos.life/api/neko", simple, "neko"

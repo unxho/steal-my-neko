@@ -1,18 +1,20 @@
 import asyncio
-from datetime import datetime
-from random import choice, randint
 import logging
 import sys
+from datetime import datetime
+from random import choice, randint
 from signal import SIGINT
-from typing import Optional, Union, List, Iterable, NoReturn
+from typing import Iterable, List, NoReturn, Optional, Union
+
 from telethon import TelegramClient
-from telethon.events import NewMessage
 from telethon.errors import BadRequestError, FileReferenceExpiredError
-from telethon.tl.types import TypeMessageMedia, TypeChat
-from .dubctl import DubsDataFile
-from .parser import UserCli, PARSERS
-from .parser.base import WebParserTemplate, TgParserTemplate, ReceiveError
+from telethon.events import NewMessage
+from telethon.tl.types import TypeChat, TypeMessageMedia
+
 from . import config, log
+from .dubctl import DubsDataFile
+from .parser import PARSERS, UserCli
+from .parser.base import ReceiveError, TgParserTemplate, WebParserTemplate
 
 client = TelegramClient(".nekoposter", config.API_ID, config.API_HASH)
 client.start(bot_token=config.BOT_TOKEN)

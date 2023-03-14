@@ -7,7 +7,7 @@ authors = ["unxho <u@n.xho>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-telethon = "^1.26.1"
+telethon = "^1.27"
 httpx = { version = "^0.23.3", extras = ["http2"] }
 aiofile = "^3.8.1"
 orjson = { version = "^3.8.5", optional = true }
@@ -23,3 +23,6 @@ ui = ["coloredlogs", "tqdm"]
 [tool.black]
 line-length = 79
 target-version = ['py38']
+
+[tool.isort]
+profile = 'black'
