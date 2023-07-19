@@ -3,8 +3,8 @@ from typing import Union
 
 try:
     import orjson as json
-except (ImportError, ModuleNotFoundError):
-    import json
+except ImportError:
+    import json  # type: ignore
 from httpx import Response
 
 
@@ -28,8 +28,6 @@ def simple(r: Union[Response, str, dict], fields: Union[tuple, list, str], *_):
         file = file.get(field)
         if not file:
             raise NoFileProvidedError(
-                f"[{r.status_code}] {r.content}"
-                if isinstance(r, Response)
-                else r
+                f"[{r.status_code}] {r.content!r}" if isinstance(r, Response) else r
             )
     return file

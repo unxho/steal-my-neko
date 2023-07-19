@@ -24,12 +24,8 @@ __all__ = ["base", "UserCli", "PARSERS"]
 from ._processors import simple
 from .base import TgParserTemplate, UserCli, WebParserTemplate
 
-NekosLifeParser = WebParserTemplate(
-    "https://nekos.life/api/neko", simple, "neko"
-)
-RandomCatParser = WebParserTemplate(
-    "https://aws.random.cat/meow", simple, "file"
-)
+NekosLifeParser = WebParserTemplate("https://nekos.life/api/neko", simple, "neko")
+RandomCatParser = WebParserTemplate("https://aws.random.cat/meow", simple, "file")
 NekosBestParser = WebParserTemplate(
     "https://nekos.best/api/v2/neko", simple, "results", "url"
 )

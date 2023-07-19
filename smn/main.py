@@ -1,10 +1,11 @@
 import asyncio
 import logging
 import sys
+from collections.abc import Iterable
 from datetime import datetime
 from random import choice, randint
 from signal import SIGINT
-from typing import Iterable, List, NoReturn, Optional, Union
+from typing import NoReturn, Optional, Union
 
 from telethon import TelegramClient
 from telethon.errors import BadRequestError, FileReferenceExpiredError
@@ -14,7 +15,7 @@ from telethon.tl.types import TypeChat, TypeMessageMedia
 from . import config, log
 from .dubctl import DubsDataFile
 from .parser import PARSERS, UserCli
-from .parser.base import ReceiveError, TgParserTemplate, WebParserTemplate
+from .parser.base import Parser, ReceiveError
 
 client = TelegramClient(".nekoposter", config.API_ID, config.API_HASH)
 client.start(bot_token=config.BOT_TOKEN)
@@ -31,7 +32,7 @@ FIRST_RUN = True
 
 
 async def post(
-    file: Union[List[TypeMessageMedia], str],
+    file: Union[list[TypeMessageMedia], str],
     test: bool = "--test" in sys.argv,
     ids: Optional[Iterable[int]] = None,
     entity: Optional[TypeChat] = None,
@@ -51,9 +52,7 @@ async def post(
             and "FILE_REFERENCE_0_EXPIRED" not in e.message
         ):
             logging.debug(e)
-            raise ReceiveError(
-                str(file) + " is too big or unreachable."
-            ) from e
+            raise ReceiveError("%s is too big or unreachable.", str(file)) from e
 
         logging.debug("File reference expired, refetching messages...")
         file = []
@@ -66,7 +65,6 @@ async def post(
 
 
 async def wait():
-
     global FIRST_RUN
     if FIRST_RUN and config.WAIT_UNTIL_NEW_HOUR:
         seconds = (60 - datetime.now().minute) * 60
@@ -75,11 +73,11 @@ async def wait():
     else:
         seconds = choice(config.FREQUENCY)
 
-    logging.debug("Waiting: " + str(seconds))
+    logging.debug("Waiting: %s", str(seconds))
     await asyncio.sleep(seconds)
 
 
-async def receiver(parser: Union[WebParserTemplate, TgParserTemplate]):
+async def receiver(parser: Parser):
     """
     Main parse wrapper.
 
@@ -89,10 +87,8 @@ async def receiver(parser: Union[WebParserTemplate, TgParserTemplate]):
     """
     if config.FALLBACK:
         async for latest_msg in UserCli.iter_messages(config.CHANNEL, 1):
-            if (
-                datetime.now() - latest_msg.date
-            ).seconds < config.FALLBACK_TIMEOUT:
-                return
+            if (datetime.now() - latest_msg.date).seconds < config.FALLBACK_TIMEOUT:
+                return None
     try:
         file = await parser.recv()
     except ReceiveError as e:
@@ -100,7 +96,7 @@ async def receiver(parser: Union[WebParserTemplate, TgParserTemplate]):
         parsers = list(PARSERS)
         parsers.remove(parser)
         if not parsers:
-            parsers = PARSERS
+            parsers = PARSERS  # type: ignore
         return await receiver(choice(parsers))
 
     dub_candidate = ""
@@ -114,11 +110,11 @@ async def receiver(parser: Union[WebParserTemplate, TgParserTemplate]):
         # Messages
         file_ = file
         file = []
-        entity = parser.chat
+        entity = parser.chat  # type: ignore
         for f in file_:
-            dub_candidate = str(parser.chat.id) + ":" + str(f.id)
+            dub_candidate = str(parser.chat.id) + ":" + str(f.id)  # type: ignore
             if dub_candidate in dublicates.data or not f.media:
-                logging.debug("Dublicate: " + dub_candidate)
+                logging.debug("Dublicate: %s", dub_candidate)
                 return await receiver(choice(PARSERS))
             msg_ids.append(f.id)
             file.append(f.media)
@@ -127,7 +123,7 @@ async def receiver(parser: Union[WebParserTemplate, TgParserTemplate]):
         # Link
         dub_candidate = file.split("/")[-1]
         if dub_candidate in dublicates.data:
-            logging.debug("Dublicate: " + dub_candidate)
+            logging.debug("Dublicate: %s", dub_candidate)
             return await receiver(choice(PARSERS))
     # elif isinstance(file, bytes):
     # TODO: raw data does not support dublicate checks
@@ -205,6 +201,9 @@ if config.ADMIN:
 
 
 def main():
-    tasks = (loop.create_task(stdin_handler()), loop.create_task(worker()))
     loop.add_signal_handler(SIGINT, sys.exit, 0)
-    loop.run_until_complete(asyncio.gather(*tasks))
+    loop.run_until_complete(
+        asyncio.gather(
+            loop.create_task(stdin_handler()), loop.create_task(worker())
+        )
+    )

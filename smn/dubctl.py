@@ -5,7 +5,7 @@ class DubsDataFile:
     def __init__(self, file: str = ".dubdata", amount: int = 24 * 7 * 3):
         self.file = file
         self.amount = amount
-        self.data = []
+        self.data: list[str] = []
 
     async def _post_init(self):
         data = []

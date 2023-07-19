@@ -1,4 +1,5 @@
-from typing import Any, Callable, Iterable, Tuple, Union
+from collections.abc import Iterable
+from typing import Any, Callable, Union
 
 from telethon.tl.types import TypeMessage
 
@@ -13,7 +14,7 @@ async def retry_on_exc(
     coro,
     *args,
     retries: int = 3,
-    exceptions: Union[Tuple[BaseException], BaseException] = Exception,
+    exceptions: Union[tuple[type[BaseException]], type[BaseException]] = Exception,
     **kwargs,
 ) -> Any:
     counter = 0
@@ -30,3 +31,4 @@ def search(lst: Iterable, func: Callable) -> Union[int, None]:
     for i, v in enumerate(lst):
         if func(v):
             return i
+    return None

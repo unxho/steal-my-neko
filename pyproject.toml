@@ -6,7 +6,7 @@ repository = "https://github.com/unxho/steal-my-neko"
 authors = ["unxho <u@n.xho>"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.9"
 telethon = "^1.27"
 httpx = { version = "^0.23.3", extras = ["http2"] }
 aiofile = "^3.8.1"
@@ -20,9 +20,25 @@ tqdm = { version = "^4.64.1", optional = true }
 speedups = ["orjson", "uvloop", "cryptg"]
 ui = ["coloredlogs", "tqdm"]
 
+[tool.ruff]
+target-version = "py39"
+select = ["PL", "E", "F", "W", "C", "R", "B", "I", "UP", "G"]
+line-length = 84
+ignore = ["PLW0603", "PLW0602", "PLR0913", "PLR0912", "PLR0911", "C901"]
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["E501"]
+
+[tool.ruff.pylint]
+allow-magic-value-types = ["str", "bytes", "int", "float"]
+
+[[tool.mypy.overrides]]
+module = ["telethon.*", "tqdm.*", "coloredlogs"]
+ignore_missing_imports = true
+
 [tool.black]
-line-length = 79
-target-version = ['py38']
+line-length = 84
+target-version = ['py39']
 
 [tool.isort]
 profile = 'black'

@@ -1,7 +1,9 @@
 import asyncio
 import logging
+from collections.abc import Iterable
+from contextlib import suppress
 from random import randint
-from typing import Callable, List, Optional, Union
+from typing import Callable, Optional, Union
 
 from httpx import AsyncClient as HttpClient
 from httpx import ConnectError, ConnectTimeout, Request, codes
@@ -52,7 +54,14 @@ loop = asyncio.get_event_loop()
 logger = logging.getLogger("parser")
 
 
-class TgParserTemplate:
+class Parser:
+    disabled = False
+
+    async def recv(self):
+        pass
+
+
+class TgParserTemplate(Parser):
     def __init__(
         self,
         link: str,
@@ -60,19 +69,17 @@ class TgParserTemplate:
         client: Optional[TelegramClient] = None,
         adfilter: bool = True,
         channel_id: Optional[int] = None,
-        allowed_links: List[str] = [],
+        allowed_links: Iterable[str] = (),
     ):
-
         if not client:
             self._client = UserCli
         else:
             self._client = client
         if not self._client:
             return
-        try:
+
+        with suppress(ConnectionError):
             self._client.start()
-        except ConnectionError:
-            pass
 
         if not link.startswith(("http:", "https:")):
             if not link.startswith("@"):
@@ -83,16 +90,14 @@ class TgParserTemplate:
         else:
             try:
                 self.chat = loop.run_until_complete(
-                    self._client(
-                        ImportChatInviteRequest(link.split("+", 1)[1])
-                    )
+                    self._client(ImportChatInviteRequest(link.split("+", 1)[1]))
                 )
-            except UserAlreadyParticipantError:
+            except UserAlreadyParticipantError as e:
                 if not channel_id:
                     raise Exception(
                         "We can't work only with invite links."
                         "Please, provide the channel_id."
-                    )
+                    ) from e
                 self.chat = loop.run_until_complete(
                     self._client.get_entity(channel_id)
                 )
@@ -113,8 +118,8 @@ class TgParserTemplate:
 
         self.link = link
         self.adf = adfilter
-        self.allowed_links = allowed_links
-        self._cache = []
+        self.allowed_links = tuple(allowed_links)
+        self._cache: list[TypeMessage] = []
         self._client.add_event_handler(
             self._cache_update,
             NewMessage(incoming=True, from_users=self.chat),
@@ -185,14 +190,13 @@ class TgParserTemplate:
                 self._cache.append(VerifiedList())
                 i = len(self._cache) - 1  # -1 seems insecure
                 self._cache[i].must_not_be_reversed = True
-            self._cache[i].append(m)
+            self._cache[i].append(m)  # type: ignore
             return
 
         if m.verified:
             self._cache.append(m)
 
     def adfilter(self, m: TypeMessage) -> bool:
-
         if hasattr(m, "messages"):
             for m_ in m.messages:
                 if not self.adfilter(m_):
@@ -245,21 +249,18 @@ class TgParserTemplate:
             if m.entities:
                 for e in m.entities:
                     if isinstance(e, MessageEntityTextUrl):
-                        if e.url not in [self.link] + self.allowed_links:
+                        if e.url not in (self.link, *self.allowed_links):
                             return False
 
         return True
 
     async def recv(self):
-
         if not self._client:
             raise ReceiveError("Helper disabled.")
         if not self._cache:
             await self._cache_everything()
             if not self._cache:
-                raise ReceiveError(
-                    f"Parser {self.link} seems unable to cache."
-                )
+                raise ReceiveError(f"Parser {self.link} seems unable to cache.")
 
         media_ind = randint(0, len(self._cache) - 1)
         media = self._cache[media_ind]
@@ -268,15 +269,13 @@ class TgParserTemplate:
         if not media.verified:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(
-                    "Media not verified: "
-                    + self.link
-                    + " -> "
-                    + utils.format_ids(media)
+                    "Media not verified: %s -> %s",
+                    self.link,
+                    utils.format_ids(media),
                 )
             return await self.recv()
 
         if isinstance(media, list):
-
             if (
                 hasattr(media, "must_not_be_reversed")
                 and media.must_not_be_reversed
@@ -286,26 +285,25 @@ class TgParserTemplate:
                 media.reverse()
 
         if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(self.link + " -> " + utils.format_ids(media))
+            logger.debug("%s -> %s", self.link, utils.format_ids(media))
 
         return media
 
 
-class WebParserTemplate:
+class WebParserTemplate(Parser):
     def __init__(
         self,
         url: str,
         process: Callable,
         *args,
         method: str = "GET",
-        headers: dict = {},
+        headers: Optional[dict] = None,
         timeout: Union[float, int] = 10,
         ignore_status_code: bool = False,
         **kwargs,
     ):
-
         self._session = HttpClient(
-            headers=headers, timeout=timeout, http2=True
+            headers=headers, timeout=float(timeout), http2=True
         )
         self.process = process
         self.url, self.method = url, method
@@ -313,22 +311,20 @@ class WebParserTemplate:
         self.args, self.kwargs = args, kwargs
 
     async def recv(self):
-
         try:
             response = await utils.retry_on_exc(
                 self._session.send,
                 Request(self.method, self.url),
                 exceptions=(ConnectError, ConnectTimeout),
             )
-        except Exception:
-            raise ReceiveError
+        except Exception as e:
+            raise ReceiveError("Failed to receive image from " + self.url) from e
 
         if not self.ignore_status_code and response.status_code != codes.OK:
             raise ReceiveError
         if asyncio.iscoroutinefunction(self.process):
             return await self.process(response, self.args, self.kwargs)
-        else:
-            return self.process(response, self.args, self.kwargs)
+        return self.process(response, self.args, self.kwargs)
 
 
 class ReceiveError(ConnectError):

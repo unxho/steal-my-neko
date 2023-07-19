@@ -3,6 +3,7 @@ import logging
 import sys
 
 try:
+    _formatter: type[logging.Formatter]
     import coloredlogs
 except ImportError:
     _formatter = logging.Formatter
@@ -17,15 +18,15 @@ from .config import LOG_CHAT
 class TgHandler(logging.Handler):
     def __init__(
         self,
-        client: "TelegramClient",  # noqa
+        client: "TelegramClient",  # type: ignore # noqa
         target: int = LOG_CHAT,
-        delay: int = 3,
+        delay: int = 1,
     ):
         super().__init__(0)
         self.client = client
         self.target = target
         self.delay = delay
-        self.queue = []
+        self.queue = []  # type: ignore
         self.lck = False
 
     def emit(self, record):
