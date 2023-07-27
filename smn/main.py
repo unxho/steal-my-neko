@@ -3,7 +3,7 @@ import logging
 import sys
 from collections.abc import Iterable
 from datetime import datetime
-from random import choice, randint
+from random import choice, choices, randint
 from signal import SIGINT
 from typing import NoReturn, Optional, Union
 
@@ -14,11 +14,13 @@ from telethon.tl.types import TypeChat, TypeMessageMedia
 
 from . import config, log
 from .dubctl import DubsDataFile
-from .parser import PARSERS, UserCli
 from .parser.base import Parser, ReceiveError
 
 client = TelegramClient(".nekoposter", config.API_ID, config.API_HASH)
 client.start(bot_token=config.BOT_TOKEN)
+log.init(client)
+
+from .parser import PARSERS, UserCli
 
 channel = config.CHANNEL
 log_chat = config.LOG_CHAT
@@ -26,7 +28,6 @@ dublicates = DubsDataFile()
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(dublicates._post_init())
-log.init(client)
 SUSPENDED = False
 FIRST_RUN = True
 
@@ -52,7 +53,7 @@ async def post(
             and "FILE_REFERENCE_0_EXPIRED" not in e.message
         ):
             logging.debug(e)
-            raise ReceiveError("%s is too big or unreachable.", str(file)) from e
+            raise ReceiveError(str(file) + " is too big or unreachable.") from e
 
         logging.debug("File reference expired, refetching messages...")
         file = []
@@ -93,11 +94,11 @@ async def receiver(parser: Parser):
         file = await parser.recv()
     except ReceiveError as e:
         logging.debug(e)
-        parsers = list(PARSERS)
+        parsers = PARSERS
         parsers.remove(parser)
         if not parsers:
             parsers = PARSERS  # type: ignore
-        return await receiver(choice(parsers))
+        return await receiver(choices(parsers, parsers.weights)[0])
 
     dub_candidate = ""
     if not isinstance(file, (str, bytes, list)):
@@ -115,7 +116,7 @@ async def receiver(parser: Parser):
             dub_candidate = str(parser.chat.id) + ":" + str(f.id)  # type: ignore
             if dub_candidate in dublicates.data or not f.media:
                 logging.debug("Dublicate: %s", dub_candidate)
-                return await receiver(choice(PARSERS))
+                return await receiver(choices(PARSERS, PARSERS.weights)[0])
             msg_ids.append(f.id)
             file.append(f.media)
 
@@ -132,7 +133,7 @@ async def receiver(parser: Parser):
     try:
         return await post(file, ids=msg_ids, entity=entity)
     except ReceiveError:
-        return await receiver(choice(PARSERS))
+        return await receiver(choices(PARSERS, PARSERS.weights)[0])
 
 
 async def worker() -> NoReturn:
@@ -145,7 +146,7 @@ async def worker() -> NoReturn:
         if FIRST_RUN and not config.POST_ON_FIRST_RUN:
             await wait()
         try:
-            await receiver(choice(PARSERS))
+            await receiver(choices(PARSERS, PARSERS.weights)[0])
         except BaseException as e:
             logging.exception(e)
         FIRST_RUN = False
@@ -163,7 +164,7 @@ async def stdin_handler() -> NoReturn:
         msg = (await loop.run_in_executor(None, input)).lower()
         if msg == "post":
             try:
-                await receiver(choice(PARSERS))
+                await receiver(choices(PARSERS, PARSERS.weights)[0])
                 print("Success!")
             except BaseException as e:
                 logging.exception(e)
