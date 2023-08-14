@@ -26,10 +26,9 @@ Example:
     A - 10%, B - 20%, C - 10%, D - 30%, F - 30%
 """
 
-from .base import TgParserTemplate, WebParserTemplate
-from ._processors import simple
 from ..config import HELPER_ENABLED
-
+from ._processors import simple
+from .base import TgParserTemplate, WebParserTemplate
 
 PARSERS = (
     WebParserTemplate("https://nekos.life/api/neko", simple, "neko"),
@@ -51,8 +50,6 @@ PARSERS = (
     ),
 )
 
-# Weight - probability of parser selection
-# PARSERS[i] has weight WEIGHTS[i]
 WEIGHTS = None
 
 ### Do not edit! ###

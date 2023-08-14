@@ -1,4 +1,5 @@
-from typing import Iterable, Optional
+from collections.abc import Iterable
+from typing import Optional
 
 
 class VerifiedList(list):
@@ -24,7 +25,7 @@ class VerifiedList(list):
 class Parsers(list):
     def __init__(self, data: Iterable, weights: Optional[Iterable] = None):
         self.weights = list(weights) if weights is not None else None
-        return super().__init__(data)
+        super().__init__(data)
 
     def __delitem__(self, __key):
         if self.weights:

@@ -22,9 +22,9 @@ ui = ["coloredlogs", "tqdm"]
 
 [tool.ruff]
 target-version = "py39"
-select = ["PL", "E", "F", "W", "C", "R", "B", "I", "UP", "G"]
+select = ["PL", "E", "F", "W", "C", "B", "I", "UP", "G"]
 line-length = 84
-ignore = ["PLW0603", "PLW0602", "PLR0913", "PLR0912", "PLR0911", "C901"]
+ignore = ["PLW0603", "PLW0602", "PLR0913", "PLR0912", "PLR0911", "C901", "E402"]
 
 [tool.ruff.per-file-ignores]
 "__init__.py" = ["E501"]
