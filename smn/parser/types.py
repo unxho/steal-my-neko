@@ -1,3 +1,6 @@
+from httpx import ConnectError
+
+
 class VerifiedList(list):
     """
     Custom list class but with ability to show
@@ -16,3 +19,7 @@ class VerifiedList(list):
             if not i.verified:
                 return False
         return True
+
+
+class ReceiveError(ConnectError):
+    pass

@@ -1,20 +1,29 @@
-[tool.poetry]
+[project]
 name = "steal-my-neko"
-version = "0.6.1"
+dynamic = ["version"]
 description = "🐈 Awesome Telegram parser & poster configured to steal nekos."
-repository = "https://github.com/unxho/steal-my-neko"
-authors = ["unxho <u@n.xho>"]
+authors = [
+    { name="unxho", email="u@n.xho" }
+]
+readme = "README.md"
+requires-python = ">=3.11"
+
+[project.urls]
+Homepage = "https://github.com/unxho/steal-my-neko"
+
+[tool.poetry]
+package-mode = false
 
 [tool.poetry.dependencies]
-python = "^3.8"
-telethon = "^1.27"
-httpx = { version = "^0.23.3", extras = ["http2"] }
-aiofile = "^3.8.1"
-orjson = { version = "^3.8.5", optional = true }
-uvloop = { version = "^0.17", optional = true }
-cryptg = { version = "^0.4", optional = true }
+python = "^3.11"
+telethon = "^1.40"
+httpx = { version = "^0.28.1", extras = ["http2"] }
+aiofile = "^3.9.0"
+orjson = { version = "^3.11.0", optional = true }
+uvloop = { version = "^0.21", optional = true }
+cryptg = { version = "^0.5.0.post0", optional = true }
 coloredlogs = { version = "^15.0.1", optional = true }
-tqdm = { version = "^4.64.1", optional = true }
+tqdm = { version = "^4.67.1", optional = true }
 
 [tool.poetry.extras]
 speedups = ["orjson", "uvloop", "cryptg"]
@@ -22,7 +31,11 @@ ui = ["coloredlogs", "tqdm"]
 
 [tool.black]
 line-length = 79
-target-version = ['py38']
 
 [tool.isort]
 profile = 'black'
+
+[tool.pyright]
+typeCheckingMode = "standard"
+reportArgumentType = false
+reportAttributeAccessIssue = false

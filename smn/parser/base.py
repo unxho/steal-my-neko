@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from random import randint
-from typing import Callable, List, Optional, Union
+from typing import Callable
 
 from httpx import AsyncClient as HttpClient
 from httpx import ConnectError, ConnectTimeout, Request, codes
@@ -41,7 +41,7 @@ except ImportError:
 
 
 from .. import config, utils
-from .types import VerifiedList
+from .types import VerifiedList, ReceiveError
 
 UserCli = (
     TelegramClient(".nekohelper", config.API_ID, config.API_HASH)
@@ -57,14 +57,14 @@ class TgParserTemplate:
         self,
         link: str,
         *,
-        client: Optional[TelegramClient] = None,
+        client: TelegramClient | None = None,
         adfilter: bool = True,
-        channel_id: Optional[int] = None,
-        allowed_links: List[str] = [],
+        channel_id: int | None = None,
+        allowed_links: list[str] = [],
     ):
 
         if not client:
-            self._client = UserCli
+            self._client: TelegramClient | None = UserCli
         else:
             self._client = client
         if not self._client:
@@ -121,6 +121,8 @@ class TgParserTemplate:
         )
 
     async def _cache_everything(self):
+        if not self._client:
+            raise ValueError
         clean_cache = []
         _album_queue = {}
         limit = 50
@@ -133,7 +135,7 @@ class TgParserTemplate:
             desc="Caching",
             leave=False,
             colour="green",
-        ).__enter__()
+        ).__enter__()  # pyright: ignore[reportOptionalMemberAccess]
 
         async for m in messages:
             m.verified = False
@@ -177,9 +179,11 @@ class TgParserTemplate:
         if m.grouped_id:
             i = utils.search(
                 self._cache,
-                lambda i: i[0].grouped_id == m.grouped_id
-                if isinstance(i, list)
-                else False,
+                lambda i: (
+                    i[0].grouped_id == m.grouped_id
+                    if isinstance(i, list)
+                    else False
+                ),
             )
             if i == None:  # noqa
                 self._cache.append(VerifiedList())
@@ -299,7 +303,7 @@ class WebParserTemplate:
         *args,
         method: str = "GET",
         headers: dict = {},
-        timeout: Union[float, int] = 10,
+        timeout: float | int = 10,
         ignore_status_code: bool = False,
         **kwargs,
     ):
@@ -321,15 +325,11 @@ class WebParserTemplate:
                 exceptions=(ConnectError, ConnectTimeout),
             )
         except Exception:
-            raise ReceiveError
+            raise ReceiveError("Unknown error")
 
         if not self.ignore_status_code and response.status_code != codes.OK:
-            raise ReceiveError
+            raise ReceiveError("Non-ok status code")
         if asyncio.iscoroutinefunction(self.process):
             return await self.process(response, self.args, self.kwargs)
         else:
             return self.process(response, self.args, self.kwargs)
-
-
-class ReceiveError(ConnectError):
-    pass

@@ -4,8 +4,9 @@ import sys
 from datetime import datetime
 from random import choice, randint
 from signal import SIGINT
-from typing import Iterable, List, NoReturn, Optional, Union
 
+from collections.abc import Iterable
+from typing import NoReturn
 from telethon import TelegramClient
 from telethon.errors import BadRequestError, FileReferenceExpiredError
 from telethon.events import NewMessage
@@ -31,21 +32,23 @@ FIRST_RUN = True
 
 
 async def post(
-    file: Union[List[TypeMessageMedia], str],
+    file: list[TypeMessageMedia] | TypeMessageMedia | str,
     test: bool = "--test" in sys.argv,
-    ids: Optional[Iterable[int]] = None,
-    entity: Optional[TypeChat] = None,
+    ids: Iterable[int] | None = None,
+    entity: TypeChat | None = None,
 ):
     out = channel if not test else log_chat
     try:
         if isinstance(file, str) and file.startswith(("http:", "https:")):
             await client.send_message(out, config.CAPTION, file=file)
-        else:
+        elif UserCli:
             if isinstance(file, list) and len(file) == 1:
                 file = file[0]
             await UserCli.send_message(out, config.CAPTION, file=file)
         return
     except BadRequestError as e:
+        if not UserCli:
+            return
         if (
             not isinstance(e, FileReferenceExpiredError)
             and "FILE_REFERENCE_0_EXPIRED" not in e.message
@@ -79,7 +82,7 @@ async def wait():
     await asyncio.sleep(seconds)
 
 
-async def receiver(parser: Union[WebParserTemplate, TgParserTemplate]):
+async def receiver(parser: WebParserTemplate | TgParserTemplate):
     """
     Main parse wrapper.
 
@@ -87,7 +90,7 @@ async def receiver(parser: Union[WebParserTemplate, TgParserTemplate]):
     str          - link to file
     bytes        - file data
     """
-    if config.FALLBACK:
+    if config.FALLBACK and UserCli:
         async for latest_msg in UserCli.iter_messages(config.CHANNEL, 1):
             if (
                 datetime.now() - latest_msg.date
@@ -110,7 +113,7 @@ async def receiver(parser: Union[WebParserTemplate, TgParserTemplate]):
 
     msg_ids = []
     entity = None
-    if isinstance(file, list):
+    if isinstance(file, list) and isinstance(parser, TgParserTemplate):
         # Messages
         file_ = file
         file = []

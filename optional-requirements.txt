@@ -1,5 +1,5 @@
-orjson>=3.8.5
-uvloop>=0.17.0
-cryptg>=0.4.0
+orjson>=3.11.0
+uvloop>=0.21.0
+cryptg>=0.5.0.post0
 coloredlogs>=15.0.1
-tqdm>=4.64.1
+tqdm>=4.67.1

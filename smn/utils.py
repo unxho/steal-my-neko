@@ -1,19 +1,20 @@
-from typing import Any, Callable, Iterable, Tuple, Union
+from collections.abc import Awaitable, Iterable
+from typing import Any, Callable
 
-from telethon.tl.types import TypeMessage
+from telethon.tl.types import Message
 
 
-def format_ids(messages: Union[Iterable[TypeMessage], TypeMessage]) -> str:
+def format_ids(messages: Iterable[Message] | Message) -> str:
     if isinstance(messages, Iterable):
         return ", ".join([str(m.id) for m in messages])
     return str(messages.id)
 
 
 async def retry_on_exc(
-    coro,
+    coro: Callable[[Any, Any], Awaitable[Any]],
     *args,
     retries: int = 3,
-    exceptions: Union[Tuple[BaseException], BaseException] = Exception,
+    exceptions=Exception,
     **kwargs,
 ) -> Any:
     counter = 0
@@ -26,7 +27,8 @@ async def retry_on_exc(
     raise Exception
 
 
-def search(lst: Iterable, func: Callable) -> Union[int, None]:
+def search(lst: Iterable[Any], func: Callable[..., bool]) -> int | None:
     for i, v in enumerate(lst):
         if func(v):
             return i
+    return None
