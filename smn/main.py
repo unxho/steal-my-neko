@@ -1,12 +1,12 @@
 import asyncio
 import logging
 import sys
-from datetime import datetime
-from random import choice, randint
-from signal import SIGINT
-
 from collections.abc import Iterable
+from datetime import datetime
+from random import choice, choices, randint
+from signal import SIGINT
 from typing import NoReturn
+
 from telethon import TelegramClient
 from telethon.errors import BadRequestError, FileReferenceExpiredError
 from telethon.events import NewMessage
@@ -14,11 +14,13 @@ from telethon.tl.types import TypeChat, TypeMessageMedia
 
 from . import config, log
 from .dubctl import DubsDataFile
-from .parser import PARSERS, UserCli
-from .parser.base import ReceiveError, TgParserTemplate, WebParserTemplate
+from .parser.base import Parser, ReceiveError, TgParserTemplate
 
 client = TelegramClient(".nekoposter", config.API_ID, config.API_HASH)
 client.start(bot_token=config.BOT_TOKEN)
+log.init(client)
+
+from .parser import PARSERS, UserCli
 
 channel = config.CHANNEL
 log_chat = config.LOG_CHAT
@@ -26,7 +28,6 @@ dublicates = DubsDataFile()
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(dublicates._post_init())
-log.init(client)
 SUSPENDED = False
 FIRST_RUN = True
 
@@ -54,9 +55,7 @@ async def post(
             and "FILE_REFERENCE_0_EXPIRED" not in e.message
         ):
             logging.debug(e)
-            raise ReceiveError(
-                str(file) + " is too big or unreachable."
-            ) from e
+            raise ReceiveError(str(file) + " is too big or unreachable.") from e
 
         logging.debug("File reference expired, refetching messages...")
         file = []
@@ -69,7 +68,6 @@ async def post(
 
 
 async def wait():
-
     global FIRST_RUN
     if FIRST_RUN and config.WAIT_UNTIL_NEW_HOUR:
         seconds = (60 - datetime.now().minute) * 60
@@ -78,11 +76,11 @@ async def wait():
     else:
         seconds = choice(config.FREQUENCY)
 
-    logging.debug("Waiting: " + str(seconds))
+    logging.debug("Waiting: %s", str(seconds))
     await asyncio.sleep(seconds)
 
 
-async def receiver(parser: WebParserTemplate | TgParserTemplate):
+async def receiver(parser: Parser):
     """
     Main parse wrapper.
 
@@ -92,19 +90,17 @@ async def receiver(parser: WebParserTemplate | TgParserTemplate):
     """
     if config.FALLBACK and UserCli:
         async for latest_msg in UserCli.iter_messages(config.CHANNEL, 1):
-            if (
-                datetime.now() - latest_msg.date
-            ).seconds < config.FALLBACK_TIMEOUT:
-                return
+            if (datetime.now() - latest_msg.date).seconds < config.FALLBACK_TIMEOUT:
+                return None
     try:
         file = await parser.recv()
     except ReceiveError as e:
         logging.debug(e)
-        parsers = list(PARSERS)
+        parsers = PARSERS
         parsers.remove(parser)
         if not parsers:
             parsers = PARSERS
-        return await receiver(choice(parsers))
+        return await receiver(choices(parsers, parsers.weights)[0])
 
     dub_candidate = ""
     if not isinstance(file, (str, bytes, list)):
@@ -121,8 +117,8 @@ async def receiver(parser: WebParserTemplate | TgParserTemplate):
         for f in file_:
             dub_candidate = str(parser.chat.id) + ":" + str(f.id)
             if dub_candidate in dublicates.data or not f.media:
-                logging.debug("Dublicate: " + dub_candidate)
-                return await receiver(choice(PARSERS))
+                logging.debug("Dublicate: %s", dub_candidate)
+                return await receiver(choices(PARSERS, PARSERS.weights)[0])
             msg_ids.append(f.id)
             file.append(f.media)
 
@@ -130,7 +126,7 @@ async def receiver(parser: WebParserTemplate | TgParserTemplate):
         # Link
         dub_candidate = file.split("/")[-1]
         if dub_candidate in dublicates.data:
-            logging.debug("Dublicate: " + dub_candidate)
+            logging.debug("Dublicate: %s", dub_candidate)
             return await receiver(choice(PARSERS))
     # elif isinstance(file, bytes):
     # TODO: raw data does not support dublicate checks
@@ -139,7 +135,7 @@ async def receiver(parser: WebParserTemplate | TgParserTemplate):
     try:
         return await post(file, ids=msg_ids, entity=entity)
     except ReceiveError:
-        return await receiver(choice(PARSERS))
+        return await receiver(choices(PARSERS, PARSERS.weights)[0])
 
 
 async def worker() -> NoReturn:
@@ -152,7 +148,7 @@ async def worker() -> NoReturn:
         if FIRST_RUN and not config.POST_ON_FIRST_RUN:
             await wait()
         try:
-            await receiver(choice(PARSERS))
+            await receiver(choices(PARSERS, PARSERS.weights)[0])
         except BaseException as e:
             logging.exception(e)
         FIRST_RUN = False
@@ -170,7 +166,7 @@ async def stdin_handler() -> NoReturn:
         msg = (await loop.run_in_executor(None, input)).lower()
         if msg == "post":
             try:
-                await receiver(choice(PARSERS))
+                await receiver(choices(PARSERS, PARSERS.weights)[0])
                 print("Success!")
             except BaseException as e:
                 logging.exception(e)
@@ -208,6 +204,9 @@ if config.ADMIN:
 
 
 def main():
-    tasks = (loop.create_task(stdin_handler()), loop.create_task(worker()))
     loop.add_signal_handler(SIGINT, sys.exit, 0)
-    loop.run_until_complete(asyncio.gather(*tasks))
+    loop.run_until_complete(
+        asyncio.gather(
+            loop.create_task(stdin_handler()), loop.create_task(worker())
+        )
+    )

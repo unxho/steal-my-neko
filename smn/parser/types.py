@@ -1,9 +1,12 @@
+from collections.abc import Iterable
+from typing import Optional
+
 from httpx import ConnectError
 
 
 class VerifiedList(list):
     """
-    Custom list class but with ability to show
+    Custom list class with ability to show
     if its objects are verified.
     """
 
@@ -19,6 +22,17 @@ class VerifiedList(list):
             if not i.verified:
                 return False
         return True
+
+
+class Parsers(list):
+    def __init__(self, data: Iterable, weights: Optional[Iterable] = None):
+        self.weights = list(weights) if weights is not None else None
+        super().__init__(data)
+
+    def __delitem__(self, __key):
+        if self.weights:
+            self.weights.__delitem__(__key)
+        return super().__delitem__(__key)
 
 
 class ReceiveError(ConnectError):

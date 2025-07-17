@@ -29,8 +29,24 @@ tqdm = { version = "^4.67.1", optional = true }
 speedups = ["orjson", "uvloop", "cryptg"]
 ui = ["coloredlogs", "tqdm"]
 
+[tool.ruff]
+target-version = "py39"
+select = ["PL", "E", "F", "W", "C", "B", "I", "UP", "G"]
+line-length = 84
+ignore = ["PLW0603", "PLW0602", "PLR0913", "PLR0912", "PLR0911", "C901", "E402"]
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["E501"]
+
+[tool.ruff.pylint]
+allow-magic-value-types = ["str", "bytes", "int", "float"]
+
+[[tool.mypy.overrides]]
+module = ["telethon.*", "tqdm.*", "coloredlogs"]
+ignore_missing_imports = true
+
 [tool.black]
-line-length = 79
+line-length = 84
 
 [tool.isort]
 profile = 'black'
